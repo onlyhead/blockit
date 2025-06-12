@@ -8,8 +8,8 @@
 #include <type_traits>
 #include <vector>
 
-#include "signer.hpp"
 #include "serializer.hpp"
+#include "signer.hpp"
 
 using namespace std::chrono;
 
@@ -47,7 +47,7 @@ namespace chain {
             return buffer;
         }
 
-        inline static Timestamp deserializeBinary(const std::vector<uint8_t>& data) {
+        inline static Timestamp deserializeBinary(const std::vector<uint8_t> &data) {
             Timestamp result;
             size_t offset = 0;
             result.sec = static_cast<int32_t>(BinarySerializer::readUint32(data, offset));
@@ -107,36 +107,34 @@ namespace chain {
         }
 
         // Serialization methods - maintain backward compatibility with string JSON
-        
+
         // Default serialize() method returns JSON string for backward compatibility
-        inline std::string serialize() const {
-            return serializeJson();
-        }
-        
+        inline std::string serialize() const { return serializeJson(); }
+
         // Binary serialization (explicit method)
         inline std::vector<uint8_t> serializeBinary() const {
             std::vector<uint8_t> buffer;
-            
+
             // Write timestamp
             BinarySerializer::writeUint32(buffer, static_cast<uint32_t>(timestamp_.sec));
             BinarySerializer::writeUint32(buffer, timestamp_.nanosec);
-            
-            // Write priority 
+
+            // Write priority
             BinarySerializer::writeInt16(buffer, priority_);
-            
+
             // Write UUID
             BinarySerializer::writeString(buffer, uuid_);
-            
+
             // Write function data - use TypeSerializer to handle different T capabilities
             auto functionData = TypeSerializer<T>::serializeBinary(function_);
             BinarySerializer::writeBytes(buffer, functionData);
-            
+
             // Write signature
             BinarySerializer::writeBytes(buffer, signature_);
-            
+
             return buffer;
         }
-        
+
         // JSON serialization
         inline std::string serializeJson() const {
             std::stringstream ss;
@@ -144,30 +142,29 @@ namespace chain {
             ss << R"("uuid": ")" << JsonSerializer::escapeJson(uuid_) << R"(",)";
             ss << R"("timestamp": {"sec": )" << timestamp_.sec << R"(, "nanosec": )" << timestamp_.nanosec << R"(},)";
             ss << R"("priority": )" << priority_ << R"(,)";
-            
+
             // Handle function serialization using TypeSerializer
             ss << R"("function": )" << TypeSerializer<T>::serializeJson(function_) << R"(,)";
-            
+
             // Encode signature as base64
             std::string signature_b64 = base64Encode(signature_);
             ss << R"("signature": ")" << signature_b64 << R"(")";
             ss << R"(})";
-            
+
             return ss.str();
         }
-        
+
         // Deserialization methods - maintain backward compatibility with string JSON
-        
+
         // Default deserialize() method for JSON string (backward compatibility)
-        static Transaction<T> deserialize(const std::string& data) {
-            return deserializeJson(data);
-        }
-        
+        static Transaction<T> deserialize(const std::string &data) { return deserializeJson(data); }
+
         // Template deserialize for format specification
-        template<typename U = T>
-        static Transaction<T> deserialize(const std::vector<uint8_t>& data, 
-                                        SerializationFormat format = SerializationFormat::BINARY,
-                                        typename std::enable_if<TypeSerializer<U>::supportsBinary() || TypeSerializer<U>::supportsJson()>::type* = 0) {
+        template <typename U = T>
+        static Transaction<T> deserialize(
+            const std::vector<uint8_t> &data, SerializationFormat format = SerializationFormat::BINARY,
+            typename std::enable_if<TypeSerializer<U>::supportsBinary() || TypeSerializer<U>::supportsJson()>::type * =
+                0) {
             if (format == SerializationFormat::BINARY) {
                 return deserializeBinary(data);
             } else {
@@ -176,75 +173,76 @@ namespace chain {
                 return deserializeJson(jsonStr);
             }
         }
-        
+
         // Auto-detect format from data
-        static Transaction<T> deserializeAuto(const std::vector<uint8_t>& data) {
+        static Transaction<T> deserializeAuto(const std::vector<uint8_t> &data) {
             // Check if it starts with binary header magic number
             if (data.size() >= 4) {
-                uint32_t magic = *reinterpret_cast<const uint32_t*>(data.data());
+                uint32_t magic = *reinterpret_cast<const uint32_t *>(data.data());
                 if (magic == BinaryHeader::MAGIC_NUMBER) {
                     return deserializeBinary(data);
                 }
             }
-            
+
             // Check if it looks like JSON (starts with '{')
             if (!data.empty() && data[0] == '{') {
                 std::string jsonStr(data.begin(), data.end());
                 return deserializeJson(jsonStr);
             }
-            
+
             // Default to binary
             return deserializeBinary(data);
         }
-        
+
         // Binary deserialization
-        static Transaction<T> deserializeBinary(const std::vector<uint8_t>& data) {
+        static Transaction<T> deserializeBinary(const std::vector<uint8_t> &data) {
             Transaction<T> result;
             size_t offset = 0;
-            
+
             // Read timestamp
             result.timestamp_.sec = static_cast<int32_t>(BinarySerializer::readUint32(data, offset));
             result.timestamp_.nanosec = BinarySerializer::readUint32(data, offset);
-            
+
             // Read priority
             result.priority_ = BinarySerializer::readInt16(data, offset);
-            
+
             // Read UUID
             result.uuid_ = BinarySerializer::readString(data, offset);
-            
+
             // Read function data using TypeSerializer
             auto functionData = BinarySerializer::readBytes(data, offset);
             result.function_ = TypeSerializer<T>::deserializeBinary(functionData);
-            
+
             // Read signature
             result.signature_ = BinarySerializer::readBytesToUChar(data, offset);
-            
+
             return result;
         }
-        
-        // JSON deserialization 
-        static Transaction<T> deserializeJson(const std::string& data) {
+
+        // JSON deserialization
+        static Transaction<T> deserializeJson(const std::string &data) {
             Transaction<T> result;
-            
+
             // Parse UUID
             result.uuid_ = JsonSerializer::extractJsonValue(data, "uuid");
-            
+
             // Parse timestamp
             std::string timestampJson = JsonSerializer::extractJsonValue(data, "timestamp");
             result.timestamp_.sec = std::stoi(JsonSerializer::extractJsonValue(timestampJson, "sec"));
-            result.timestamp_.nanosec = static_cast<uint32_t>(std::stoul(JsonSerializer::extractJsonValue(timestampJson, "nanosec")));
-            
+            result.timestamp_.nanosec =
+                static_cast<uint32_t>(std::stoul(JsonSerializer::extractJsonValue(timestampJson, "nanosec")));
+
             // Parse priority
             result.priority_ = static_cast<int16_t>(std::stoi(JsonSerializer::extractJsonValue(data, "priority")));
-            
+
             // Parse function using TypeSerializer
             std::string functionJson = JsonSerializer::extractJsonValue(data, "function");
             result.function_ = TypeSerializer<T>::deserializeJson(functionJson);
-            
+
             // Parse signature
             std::string signature_b64 = JsonSerializer::extractJsonValue(data, "signature");
             result.signature_ = staticBase64Decode(signature_b64);
-            
+
             return result;
         }
 
@@ -258,7 +256,7 @@ namespace chain {
         inline std::vector<unsigned char> base64Decode(const std::string &data) const {
             return chain::base64Decode(data);
         }
-        
+
         // Static helpers for deserialization
         static std::string staticBase64Encode(const std::vector<unsigned char> &data) {
             return chain::base64Encode(data);

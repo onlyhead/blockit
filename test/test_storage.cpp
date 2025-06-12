@@ -40,7 +40,7 @@ struct StorageTestData {
         return buffer;
     }
 
-    static StorageTestData deserializeBinary(const std::vector<uint8_t>& data) {
+    static StorageTestData deserializeBinary(const std::vector<uint8_t> &data) {
         StorageTestData result;
         size_t offset = 0;
         result.identifier = chain::BinarySerializer::readString(data, offset);
@@ -331,8 +331,8 @@ TEST_SUITE("Persistent Storage - Implemented") {
         auto privateKey = std::make_shared<chain::Crypto>("binary_json_tx_key");
 
         // Create a transaction
-        chain::Transaction<StorageTestData> originalTx("binary-json-tx-001", 
-                                                       StorageTestData{"binary_test", 123.456}, 200);
+        chain::Transaction<StorageTestData> originalTx("binary-json-tx-001", StorageTestData{"binary_test", 123.456},
+                                                       200);
         originalTx.signTransaction(privateKey);
 
         // Test JSON serialization (default)
@@ -354,18 +354,18 @@ TEST_SUITE("Persistent Storage - Implemented") {
         CHECK(binarySerialized[0] != '{');
 
         // Test JSON deserialization
-        chain::Transaction<StorageTestData> jsonDeserialized = 
+        chain::Transaction<StorageTestData> jsonDeserialized =
             chain::Transaction<StorageTestData>::deserialize(jsonSerialized);
-        
+
         CHECK(jsonDeserialized.uuid_ == originalTx.uuid_);
         CHECK(jsonDeserialized.priority_ == originalTx.priority_);
         CHECK(jsonDeserialized.function_.identifier == originalTx.function_.identifier);
         CHECK(jsonDeserialized.function_.value == originalTx.function_.value);
 
         // Test binary deserialization
-        chain::Transaction<StorageTestData> binaryDeserialized = 
+        chain::Transaction<StorageTestData> binaryDeserialized =
             chain::Transaction<StorageTestData>::deserializeBinary(binarySerialized);
-        
+
         CHECK(binaryDeserialized.uuid_ == originalTx.uuid_);
         CHECK(binaryDeserialized.priority_ == originalTx.priority_);
         CHECK(binaryDeserialized.function_.identifier == originalTx.function_.identifier);
@@ -380,7 +380,7 @@ TEST_SUITE("Persistent Storage - Implemented") {
         // Test size comparison (binary should typically be smaller)
         std::cout << "JSON size: " << jsonSerialized.size() << " bytes" << std::endl;
         std::cout << "Binary size: " << binarySerialized.size() << " bytes" << std::endl;
-        
+
         std::cout << "Binary vs JSON Transaction serialization test passed!" << std::endl;
     }
 
@@ -391,7 +391,8 @@ TEST_SUITE("Persistent Storage - Implemented") {
         std::vector<chain::Transaction<StorageTestData>> transactions;
         for (int i = 1; i <= 3; i++) {
             chain::Transaction<StorageTestData> tx("binary-block-tx-" + std::to_string(i),
-                                                   StorageTestData{"block_binary_test_" + std::to_string(i), i * 100.0}, 150);
+                                                   StorageTestData{"block_binary_test_" + std::to_string(i), i * 100.0},
+                                                   150);
             tx.signTransaction(privateKey);
             transactions.push_back(tx);
         }
@@ -417,9 +418,8 @@ TEST_SUITE("Persistent Storage - Implemented") {
         CHECK(binarySerialized[0] != '{');
 
         // Test JSON deserialization
-        chain::Block<StorageTestData> jsonDeserialized = 
-            chain::Block<StorageTestData>::deserialize(jsonSerialized);
-        
+        chain::Block<StorageTestData> jsonDeserialized = chain::Block<StorageTestData>::deserialize(jsonSerialized);
+
         CHECK(jsonDeserialized.index_ == originalBlock.index_);
         CHECK(jsonDeserialized.hash_ == originalBlock.hash_);
         CHECK(jsonDeserialized.previous_hash_ == originalBlock.previous_hash_);
@@ -427,9 +427,9 @@ TEST_SUITE("Persistent Storage - Implemented") {
         CHECK(jsonDeserialized.transactions_.size() == originalBlock.transactions_.size());
 
         // Test binary deserialization
-        chain::Block<StorageTestData> binaryDeserialized = 
+        chain::Block<StorageTestData> binaryDeserialized =
             chain::Block<StorageTestData>::deserializeBinary(binarySerialized);
-        
+
         CHECK(binaryDeserialized.index_ == originalBlock.index_);
         CHECK(binaryDeserialized.hash_ == originalBlock.hash_);
         CHECK(binaryDeserialized.previous_hash_ == originalBlock.previous_hash_);
@@ -446,16 +446,16 @@ TEST_SUITE("Persistent Storage - Implemented") {
         // Test transaction data integrity
         for (size_t i = 0; i < originalBlock.transactions_.size(); i++) {
             CHECK(jsonDeserialized.transactions_[i].uuid_ == binaryDeserialized.transactions_[i].uuid_);
-            CHECK(jsonDeserialized.transactions_[i].function_.identifier == 
+            CHECK(jsonDeserialized.transactions_[i].function_.identifier ==
                   binaryDeserialized.transactions_[i].function_.identifier);
-            CHECK(jsonDeserialized.transactions_[i].function_.value == 
+            CHECK(jsonDeserialized.transactions_[i].function_.value ==
                   binaryDeserialized.transactions_[i].function_.value);
         }
 
         // Test size comparison
         std::cout << "JSON size: " << jsonSerialized.size() << " bytes" << std::endl;
         std::cout << "Binary size: " << binarySerialized.size() << " bytes" << std::endl;
-        
+
         std::cout << "Binary vs JSON Block serialization test passed!" << std::endl;
     }
 
@@ -463,20 +463,20 @@ TEST_SUITE("Persistent Storage - Implemented") {
         auto privateKey = std::make_shared<chain::Crypto>("perf_test_key");
 
         // Create a substantial transaction for performance testing
-        chain::Transaction<StorageTestData> tx("performance-test-tx", 
-                                               StorageTestData{"performance_data_with_long_identifier", 987.654321}, 300);
+        chain::Transaction<StorageTestData> tx(
+            "performance-test-tx", StorageTestData{"performance_data_with_long_identifier", 987.654321}, 300);
         tx.signTransaction(privateKey);
 
         // Create a block with multiple transactions
         std::vector<chain::Transaction<StorageTestData>> transactions;
         for (int i = 0; i < 10; i++) {
-            chain::Transaction<StorageTestData> perfTx("perf-tx-" + std::to_string(i),
-                                                       StorageTestData{"performance_test_data_item_" + std::to_string(i), 
-                                                                      i * 3.14159}, 100 + i);
+            chain::Transaction<StorageTestData> perfTx(
+                "perf-tx-" + std::to_string(i),
+                StorageTestData{"performance_test_data_item_" + std::to_string(i), i * 3.14159}, 100 + i);
             perfTx.signTransaction(privateKey);
             transactions.push_back(perfTx);
         }
-        
+
         chain::Block<StorageTestData> block(transactions);
 
         // Measure JSON serialization
@@ -497,7 +497,7 @@ TEST_SUITE("Persistent Storage - Implemented") {
         auto jsonDeserEnd = std::chrono::high_resolution_clock::now();
         auto jsonDeserTime = std::chrono::duration_cast<std::chrono::microseconds>(jsonDeserEnd - jsonDeserStart);
 
-        // Measure binary deserialization  
+        // Measure binary deserialization
         auto binaryDeserStart = std::chrono::high_resolution_clock::now();
         chain::Block<StorageTestData> binaryDeserialized = chain::Block<StorageTestData>::deserializeBinary(binaryData);
         auto binaryDeserEnd = std::chrono::high_resolution_clock::now();
@@ -512,15 +512,16 @@ TEST_SUITE("Persistent Storage - Implemented") {
         std::cout << "=== Performance Comparison ===" << std::endl;
         std::cout << "JSON size: " << jsonData.size() << " bytes" << std::endl;
         std::cout << "Binary size: " << binaryData.size() << " bytes" << std::endl;
-        std::cout << "Size reduction: " << (100.0 * (jsonData.size() - binaryData.size()) / jsonData.size()) << "%" << std::endl;
+        std::cout << "Size reduction: " << (100.0 * (jsonData.size() - binaryData.size()) / jsonData.size()) << "%"
+                  << std::endl;
         std::cout << "JSON serialization time: " << jsonTime.count() << " microseconds" << std::endl;
         std::cout << "Binary serialization time: " << binaryTime.count() << " microseconds" << std::endl;
         std::cout << "JSON deserialization time: " << jsonDeserTime.count() << " microseconds" << std::endl;
         std::cout << "Binary deserialization time: " << binaryDeserTime.count() << " microseconds" << std::endl;
-        
+
         // Binary format should typically be smaller
         CHECK(binaryData.size() <= jsonData.size());
-        
+
         std::cout << "Performance comparison test passed!" << std::endl;
     }
 
@@ -528,8 +529,8 @@ TEST_SUITE("Persistent Storage - Implemented") {
         auto privateKey = std::make_shared<chain::Crypto>("auto_detect_key");
 
         // Create a transaction
-        chain::Transaction<StorageTestData> originalTx("auto-detect-tx", 
-                                                       StorageTestData{"auto_detect_test", 42.0}, 100);
+        chain::Transaction<StorageTestData> originalTx("auto-detect-tx", StorageTestData{"auto_detect_test", 42.0},
+                                                       100);
         originalTx.signTransaction(privateKey);
 
         // Serialize in both formats
@@ -540,17 +541,17 @@ TEST_SUITE("Persistent Storage - Implemented") {
         std::vector<uint8_t> jsonAsBytes(jsonData.begin(), jsonData.end());
 
         // Test auto-detection with JSON data (as bytes)
-        chain::Transaction<StorageTestData> autoDetectedJson = 
+        chain::Transaction<StorageTestData> autoDetectedJson =
             chain::Transaction<StorageTestData>::deserializeAuto(jsonAsBytes);
-        
+
         CHECK(autoDetectedJson.uuid_ == originalTx.uuid_);
         CHECK(autoDetectedJson.function_.identifier == originalTx.function_.identifier);
         CHECK(autoDetectedJson.function_.value == originalTx.function_.value);
 
         // Test auto-detection with binary data
-        chain::Transaction<StorageTestData> autoDetectedBinary = 
+        chain::Transaction<StorageTestData> autoDetectedBinary =
             chain::Transaction<StorageTestData>::deserializeAuto(binaryData);
-        
+
         CHECK(autoDetectedBinary.uuid_ == originalTx.uuid_);
         CHECK(autoDetectedBinary.function_.identifier == originalTx.function_.identifier);
         CHECK(autoDetectedBinary.function_.value == originalTx.function_.value);
@@ -567,13 +568,14 @@ TEST_SUITE("Persistent Storage - Implemented") {
         auto privateKey = std::make_shared<chain::Crypto>("unified_test_key");
 
         // Create a chain with mixed operations
-        chain::Chain<StorageTestData> originalChain("unified-test-chain", "genesis", 
+        chain::Chain<StorageTestData> originalChain("unified-test-chain", "genesis",
                                                     StorageTestData{"genesis_unified", 0.0}, privateKey);
 
         // Add several blocks with different data
         for (int i = 1; i <= 5; i++) {
             chain::Transaction<StorageTestData> tx("unified-tx-" + std::to_string(i),
-                                                   StorageTestData{"unified_data_" + std::to_string(i), i * 2.5}, 100 + i);
+                                                   StorageTestData{"unified_data_" + std::to_string(i), i * 2.5},
+                                                   100 + i);
             tx.signTransaction(privateKey);
             chain::Block<StorageTestData> block({tx});
             originalChain.addBlock(block);
@@ -585,24 +587,22 @@ TEST_SUITE("Persistent Storage - Implemented") {
         CHECK(chainJson.find("unified-test-chain") != std::string::npos);
 
         // Deserialize the chain
-        chain::Chain<StorageTestData> deserializedChain = 
-            chain::Chain<StorageTestData>::deserialize(chainJson);
-        
+        chain::Chain<StorageTestData> deserializedChain = chain::Chain<StorageTestData>::deserialize(chainJson);
+
         CHECK(deserializedChain.uuid_ == originalChain.uuid_);
         CHECK(deserializedChain.getChainLength() == originalChain.getChainLength());
         CHECK(deserializedChain.isValid());
 
         // Test individual transaction serialization in both formats
-        auto& testTx = originalChain.blocks_[1].transactions_[0];
-        
+        auto &testTx = originalChain.blocks_[1].transactions_[0];
+
         // JSON serialization (default for backward compatibility)
         std::string txJson = testTx.serialize();
-        chain::Transaction<StorageTestData> txFromJson = 
-            chain::Transaction<StorageTestData>::deserialize(txJson);
-        
+        chain::Transaction<StorageTestData> txFromJson = chain::Transaction<StorageTestData>::deserialize(txJson);
+
         // Binary serialization (new capability)
         std::vector<uint8_t> txBinary = testTx.serializeBinary();
-        chain::Transaction<StorageTestData> txFromBinary = 
+        chain::Transaction<StorageTestData> txFromBinary =
             chain::Transaction<StorageTestData>::deserializeBinary(txBinary);
 
         // Both should produce identical results
@@ -612,17 +612,15 @@ TEST_SUITE("Persistent Storage - Implemented") {
         CHECK(txFromJson.priority_ == txFromBinary.priority_);
 
         // Test individual block serialization in both formats
-        auto& testBlock = originalChain.blocks_[1];
-        
+        auto &testBlock = originalChain.blocks_[1];
+
         // JSON serialization (default for backward compatibility)
         std::string blockJson = testBlock.serialize();
-        chain::Block<StorageTestData> blockFromJson = 
-            chain::Block<StorageTestData>::deserialize(blockJson);
-        
+        chain::Block<StorageTestData> blockFromJson = chain::Block<StorageTestData>::deserialize(blockJson);
+
         // Binary serialization (new capability)
         std::vector<uint8_t> blockBinary = testBlock.serializeBinary();
-        chain::Block<StorageTestData> blockFromBinary = 
-            chain::Block<StorageTestData>::deserializeBinary(blockBinary);
+        chain::Block<StorageTestData> blockFromBinary = chain::Block<StorageTestData>::deserializeBinary(blockBinary);
 
         // Both should produce identical results
         CHECK(blockFromJson.index_ == blockFromBinary.index_);
@@ -631,28 +629,28 @@ TEST_SUITE("Persistent Storage - Implemented") {
         CHECK(blockFromJson.transactions_.size() == blockFromBinary.transactions_.size());
 
         // Verify that the type serializer works correctly with StorageTestData
-        auto& testData = testTx.function_;
-        
+        auto &testData = testTx.function_;
+
         // Test JSON serialization via TypeSerializer
         std::string dataJson = chain::TypeSerializer<StorageTestData>::serializeJson(testData);
         StorageTestData dataFromJson = chain::TypeSerializer<StorageTestData>::deserializeJson(dataJson);
-        
+
         CHECK(dataFromJson.identifier == testData.identifier);
         CHECK(dataFromJson.value == testData.value);
 
         // Test Binary serialization via TypeSerializer
         std::vector<uint8_t> dataBinary = chain::TypeSerializer<StorageTestData>::serializeBinary(testData);
         StorageTestData dataFromBinary = chain::TypeSerializer<StorageTestData>::deserializeBinary(dataBinary);
-        
+
         CHECK(dataFromBinary.identifier == testData.identifier);
         CHECK(dataFromBinary.value == testData.value);
 
         // Test SFINAE detection
         bool supportsBinary = chain::TypeSerializer<StorageTestData>::supportsBinary();
         bool supportsJson = chain::TypeSerializer<StorageTestData>::supportsJson();
-        
-        CHECK(supportsBinary == true);  // StorageTestData has serializeBinary/deserializeBinary
-        CHECK(supportsJson == true);    // StorageTestData has serialize/deserialize
+
+        CHECK(supportsBinary == true); // StorageTestData has serializeBinary/deserializeBinary
+        CHECK(supportsJson == true);   // StorageTestData has serialize/deserialize
 
         // Demonstrate format preferences
         std::cout << "=== Unified Serialization System Test Results ===" << std::endl;
@@ -663,7 +661,7 @@ TEST_SUITE("Persistent Storage - Implemented") {
         std::cout << "Block Binary size: " << blockBinary.size() << " bytes" << std::endl;
         std::cout << "StorageTestData supports binary: " << (supportsBinary ? "YES" : "NO") << std::endl;
         std::cout << "StorageTestData supports JSON: " << (supportsJson ? "YES" : "NO") << std::endl;
-        
+
         std::cout << "Unified serialization system integration test passed!" << std::endl;
     }
 }

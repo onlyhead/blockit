@@ -138,69 +138,69 @@ namespace chain {
         // Binary serialization methods for unified system
         inline std::vector<uint8_t> serializeBinary() const {
             std::vector<uint8_t> buffer;
-            
+
             // Write index
             BinarySerializer::writeUint32(buffer, static_cast<uint32_t>(index_));
-            
+
             // Write previous hash
             BinarySerializer::writeString(buffer, previous_hash_);
-            
+
             // Write hash
             BinarySerializer::writeString(buffer, hash_);
-            
+
             // Write nonce
             BinarySerializer::writeUint32(buffer, static_cast<uint32_t>(nonce_));
-            
+
             // Write timestamp
             auto timestampData = timestamp_.serializeBinary();
             BinarySerializer::writeBytes(buffer, timestampData);
-            
+
             // Write merkle root
             BinarySerializer::writeString(buffer, merkle_root_);
-            
+
             // Write transactions count and data
             BinarySerializer::writeUint32(buffer, static_cast<uint32_t>(transactions_.size()));
-            for (const auto& tx : transactions_) {
+            for (const auto &tx : transactions_) {
                 auto txData = tx.serializeBinary();
                 BinarySerializer::writeBytes(buffer, txData);
             }
-            
+
             return buffer;
         }
-        
-        static Block<T> deserializeBinary(const std::vector<uint8_t>& data) {
+
+        static Block<T> deserializeBinary(const std::vector<uint8_t> &data) {
             Block<T> result;
             size_t offset = 0;
-            
+
             // Read index
             result.index_ = static_cast<int64_t>(BinarySerializer::readUint32(data, offset));
-            
+
             // Read previous hash
             result.previous_hash_ = BinarySerializer::readString(data, offset);
-            
+
             // Read hash
             result.hash_ = BinarySerializer::readString(data, offset);
-            
+
             // Read nonce
             result.nonce_ = static_cast<int64_t>(BinarySerializer::readUint32(data, offset));
-            
+
             // Read timestamp
             auto timestampData = BinarySerializer::readBytes(data, offset);
             result.timestamp_ = Timestamp::deserializeBinary(timestampData);
-            
+
             // Read merkle root
             result.merkle_root_ = BinarySerializer::readString(data, offset);
-            
+
             // Read transactions
             uint32_t txCount = BinarySerializer::readUint32(data, offset);
             for (uint32_t i = 0; i < txCount; i++) {
                 auto txData = BinarySerializer::readBytes(data, offset);
                 result.transactions_.push_back(Transaction<T>::deserializeBinary(txData));
             }
-            
+
             return result;
         }
-        
+
         // JSON serialization methods (maintain backward compatibility)
         inline std::string serializeJson() const {
             std::stringstream ss;
@@ -227,9 +227,7 @@ namespace chain {
         }
 
         // Serialization methods
-        inline std::string serialize() const {
-            return serializeJson();
-        }
+        inline std::string serialize() const { return serializeJson(); }
 
         inline static Block<T> deserialize(const std::string &data) {
             Block<T> result;
