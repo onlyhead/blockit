@@ -1,18 +1,21 @@
+#pragma once
+
+#include <chrono>
 #include <iostream>
 #include <vector>
 
 #include "block.hpp"
-#include <farmbot_interfaces/msg/chain.hpp>
+
+using namespace std::chrono;
 
 namespace chain {
-    class Chain : public farmbot_interfaces::msg::Chain {
+    class Chain {
       public:
         std::string uuid_;
-        builtin_interfaces::msg::Time timestamp_;
+        Timestamp timestamp_;
         std::vector<Block> blocks_;
 
         Chain() = default;
-        Chain(const farmbot_interfaces::msg::Chain &msg) { fromMsg(msg); }
         Chain(std::string s_uuid, std::string t_uuid, std::string function, std::shared_ptr<chain::Crypto> privateKey_,
               int16_t priority = 100) {
             Transaction genesisTransaction(t_uuid, function, priority);
@@ -73,26 +76,6 @@ namespace chain {
                 }
             }
             return true;
-        }
-
-        farmbot_interfaces::msg::Chain toMsg() const {
-            farmbot_interfaces::msg::Chain msg;
-            msg.timestamp = timestamp_;
-            msg.uuid = uuid_;
-            for (const auto &block : blocks_) {
-                msg.chain.push_back(block.toMsg());
-            }
-            return msg;
-        }
-
-        void fromMsg(const farmbot_interfaces::msg::Chain &msg) {
-            timestamp_ = msg.timestamp;
-            uuid_ = msg.uuid;
-            for (const auto &block : msg.chain) {
-                Block blk;
-                blk.fromMsg(block);
-                blocks_.push_back(blk);
-            }
         }
     };
 } // namespace chain

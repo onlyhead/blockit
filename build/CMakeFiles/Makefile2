@@ -108,39 +108,20 @@ _deps/doctest-build/clean: _deps/doctest-build/CMakeFiles/doctest_with_main.dir/
 # Directory level rules for directory _deps/lockey-build
 
 # Recursive "all" directory target.
-_deps/lockey-build/all: _deps/pigment-build/all
+_deps/lockey-build/all:
 .PHONY : _deps/lockey-build/all
 
 # Recursive "codegen" directory target.
-_deps/lockey-build/codegen: _deps/pigment-build/codegen
+_deps/lockey-build/codegen:
 .PHONY : _deps/lockey-build/codegen
 
 # Recursive "preinstall" directory target.
-_deps/lockey-build/preinstall: _deps/pigment-build/preinstall
+_deps/lockey-build/preinstall:
 .PHONY : _deps/lockey-build/preinstall
 
 # Recursive "clean" directory target.
-_deps/lockey-build/clean: _deps/pigment-build/clean
+_deps/lockey-build/clean:
 .PHONY : _deps/lockey-build/clean
-
-#=============================================================================
-# Directory level rules for directory _deps/pigment-build
-
-# Recursive "all" directory target.
-_deps/pigment-build/all:
-.PHONY : _deps/pigment-build/all
-
-# Recursive "codegen" directory target.
-_deps/pigment-build/codegen:
-.PHONY : _deps/pigment-build/codegen
-
-# Recursive "preinstall" directory target.
-_deps/pigment-build/preinstall:
-.PHONY : _deps/pigment-build/preinstall
-
-# Recursive "clean" directory target.
-_deps/pigment-build/clean:
-.PHONY : _deps/pigment-build/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/main.dir

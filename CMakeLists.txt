@@ -21,7 +21,7 @@ include(FetchContent)
 
 # --------------------------------------------------------------------------------------------------
 set(ext_deps)
-FetchContent_Declare(lockey GIT_REPOSITORY https://github.com/onlyhead/lockey.git GIT_TAG main)
+FetchContent_Declare(lockey GIT_REPOSITORY https://github.com/onlyhead/lockey.git GIT_TAG 0.2.0)
 FetchContent_MakeAvailable(lockey)
 list(APPEND ext_deps lockey::lockey)
 

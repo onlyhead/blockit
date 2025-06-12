@@ -1,3 +1,6 @@
+#pragma once
+
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <lockey/lockey.hpp>
@@ -6,20 +9,20 @@
 #include <vector>
 
 #include "transaction.hpp"
-#include <farmbot_interfaces/msg/block.hpp>
+
+using namespace std::chrono;
 
 namespace chain {
-    class Block : public farmbot_interfaces::msg::Block {
+    class Block {
       public:
         int64_t index_;
         std::string previous_hash_;
         std::string hash_;
         std::vector<Transaction> transactions_;
         int64_t nonce_;
-        builtin_interfaces::msg::Time timestamp_;
+        Timestamp timestamp_;
 
         Block() = default;
-        Block(const farmbot_interfaces::msg::Block &msg) { fromMsg(msg); }
         Block(std::vector<Transaction> txns) {
             index_ = 0;
             previous_hash_ = "GENESIS";
@@ -38,7 +41,18 @@ namespace chain {
             for (const auto &txn : transactions_) {
                 ss << txn.toString();
             }
-            return sha256(ss.str());
+
+            // Use lockey hash function and convert to hex
+            lockey::Lockey crypto(lockey::Lockey::Algorithm::AES_256_GCM, lockey::Lockey::HashAlgorithm::SHA256);
+            std::string data = ss.str();
+            std::vector<uint8_t> data_vec(data.begin(), data.end());
+            auto hash_result = crypto.hash(data_vec);
+
+            if (hash_result.success) {
+                return lockey::Lockey::to_hex(hash_result.data);
+            } else {
+                return ""; // Return empty string on hash failure
+            }
         }
 
         bool isValid() const {
@@ -50,45 +64,7 @@ namespace chain {
             return true;
         }
 
-        farmbot_interfaces::msg::Block toMsg() const {
-            farmbot_interfaces::msg::Block msg;
-            msg.index = index_;
-            msg.previous_hash = previous_hash_;
-            msg.hash = hash_;
-            for (const auto &txn : transactions_) {
-    :qa
-      msg.transactions.push_back(txn.toMsg());
-            }
-            msg.nonce = nonce_;
-            msg.timestamp = timestamp_;
-            return msg;
-        }
-
-        void fromMsg(const farmbot_interfaces::msg::Block &msg) {
-            index_ = msg.index;
-            previous_hash_ = msg.previous_hash;
-            hash_ = msg.hash;
-            for (const auto &transaction : msg.transactions) {
-                Transaction txn;
-                txn.fromMsg(transaction);
-                transactions_.push_back(txn);
-            }
-            nonce_ = msg.nonce;
-            timestamp_ = msg.timestamp;
-        }
-
       private:
-        // Helper function to calculate SHA-256 hash
-        std::string sha256(const std::string &data) const {
-            unsigned char hash[SHA256_DIGEST_LENGTH];
-            SHA256((unsigned char *)data.c_str(), data.size(), hash);
-            std::stringstream ss;
-            for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-                ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
-            }
-            return ss.str();
-        }
-
         // Helper function to get the current timestamp
         std::string getCurrentTime() const {
             std::time_t now = std::time(nullptr);

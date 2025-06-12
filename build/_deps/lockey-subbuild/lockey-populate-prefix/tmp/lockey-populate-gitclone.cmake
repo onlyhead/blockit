@@ -52,13 +52,13 @@ endif()
 
 execute_process(
   COMMAND "/usr/bin/git"
-          checkout "main" --
+          checkout "0.2.0" --
   WORKING_DIRECTORY "/doc/code/blockit/build/_deps/lockey-src"
   RESULT_VARIABLE error_code
   ${maybe_show_command}
 )
 if(error_code)
-  message(FATAL_ERROR "Failed to checkout tag: 'main'")
+  message(FATAL_ERROR "Failed to checkout tag: '0.2.0'")
 endif()
 
 set(init_submodules TRUE)

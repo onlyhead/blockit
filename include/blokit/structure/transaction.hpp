@@ -1,12 +1,11 @@
+#pragma once
+
+#include <chrono>
 #include <ctime>
 #include <iostream>
 #include <sstream>
 #include <string>
-
-#include <farmbot_interfaces/msg/transaction.hpp>
-#include <rclcpp/rclcpp.hpp>
-
-#include <chrono>
+#include <vector>
 
 #include "signer.hpp"
 
@@ -16,14 +15,9 @@ namespace chain {
     struct Timestamp {
         int32_t sec;
         uint32_t nanosec;
-        void toMsg(builtin_interfaces::msg::Time &msg) const {
-            msg.sec = sec;
-            msg.nanosec = nanosec;
-        }
-        void fromMsg(const builtin_interfaces::msg::Time &msg) {
-            sec = msg.sec;
-            nanosec = msg.nanosec;
-        }
+
+        Timestamp() : sec(0), nanosec(0) {}
+        Timestamp(int32_t s, uint32_t ns) : sec(s), nanosec(ns) {}
     };
 
     class Transaction {
@@ -35,7 +29,6 @@ namespace chain {
         std::vector<unsigned char> signature_;
 
         Transaction() = default;
-        Transaction(const farmbot_interfaces::msg::Transaction &msg) { fromMsg(msg); }
         Transaction(std::string uuid, std::string function, int16_t priority = 100) {
             priority_ = priority;
             uuid_ = uuid;
@@ -64,23 +57,6 @@ namespace chain {
             std::stringstream ss;
             ss << timestamp_.sec << timestamp_.nanosec << priority_ << uuid_ << function_;
             return ss.str();
-        }
-
-        farmbot_interfaces::msg::Transaction toMsg() const {
-            farmbot_interfaces::msg::Transaction msg;
-            msg.priority = priority_;
-            msg.uuid = uuid_;
-            msg.function = function_;
-            msg.signature = signature_;
-            return msg;
-        }
-
-        void fromMsg(const farmbot_interfaces::msg::Transaction &msg) {
-            timestamp_.fromMsg(msg.timestamp);
-            priority_ = msg.priority;
-            uuid_ = msg.uuid;
-            function_ = msg.function;
-            signature_ = msg.signature;
         }
     };
 } // namespace chain

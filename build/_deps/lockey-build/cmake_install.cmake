@@ -42,11 +42,6 @@ if(NOT DEFINED CMAKE_OBJDUMP)
   set(CMAKE_OBJDUMP "/nix/store/0fsnicvfpf55nkza12cjnad0w84d6ba7-gcc-wrapper-14.2.1.20250322/bin/objdump")
 endif()
 
-if(NOT CMAKE_INSTALL_LOCAL_ONLY)
-  # Include the install script for the subdirectory.
-  include("/doc/code/blockit/build/_deps/pigment-build/cmake_install.cmake")
-endif()
-
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE DIRECTORY FILES "/doc/code/blockit/build/_deps/lockey-src/include/")
 endif()

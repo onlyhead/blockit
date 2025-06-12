@@ -20,9 +20,6 @@ BLOCKIT_BUILD_EXAMPLES:BOOL=ON
 //Enable tests
 BLOCKIT_ENABLE_TESTS:BOOL=ON
 
-//Build examples
-BUILD_EXAMPLES:BOOL=OFF
-
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/nix/store/0fsnicvfpf55nkza12cjnad0w84d6ba7-gcc-wrapper-14.2.1.20250322/bin/addr2line
 
@@ -182,7 +179,7 @@ CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 CMAKE_PROJECT_NAME:STATIC=blockit
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION:STATIC=0.0.1
+CMAKE_PROJECT_VERSION:STATIC=0.0.2
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_MAJOR:STATIC=0
@@ -191,7 +188,7 @@ CMAKE_PROJECT_VERSION_MAJOR:STATIC=0
 CMAKE_PROJECT_VERSION_MINOR:STATIC=0
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION_PATCH:STATIC=1
+CMAKE_PROJECT_VERSION_PATCH:STATIC=2
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_TWEAK:STATIC=
@@ -294,10 +291,6 @@ FETCHCONTENT_SOURCE_DIR_DOCTEST:PATH=
 // for lockey
 FETCHCONTENT_SOURCE_DIR_LOCKEY:PATH=
 
-//When not empty, overrides where to find pre-populated content
-// for pigment
-FETCHCONTENT_SOURCE_DIR_PIGMENT:PATH=
-
 //Enables UPDATE_DISCONNECTED behavior for all content population
 FETCHCONTENT_UPDATES_DISCONNECTED:BOOL=OFF
 
@@ -307,14 +300,14 @@ FETCHCONTENT_UPDATES_DISCONNECTED_DOCTEST:BOOL=OFF
 //Enables UPDATE_DISCONNECTED behavior just for population of lockey
 FETCHCONTENT_UPDATES_DISCONNECTED_LOCKEY:BOOL=OFF
 
-//Enables UPDATE_DISCONNECTED behavior just for population of pigment
-FETCHCONTENT_UPDATES_DISCONNECTED_PIGMENT:BOOL=OFF
-
 //Git command line client
 GIT_EXECUTABLE:FILEPATH=/usr/bin/git
 
 //Build examples
 LOCKEY_BUILD_EXAMPLES:BOOL=OFF
+
+//Enable tests
+LOCKEY_ENABLE_TESTS:BOOL=OFF
 
 //Value Computed by CMake
 blockit_BINARY_DIR:STATIC=/doc/code/blockit/build
@@ -342,15 +335,6 @@ lockey_IS_TOP_LEVEL:STATIC=OFF
 
 //Value Computed by CMake
 lockey_SOURCE_DIR:STATIC=/doc/code/blockit/build/_deps/lockey-src
-
-//Value Computed by CMake
-pigment_BINARY_DIR:STATIC=/doc/code/blockit/build/_deps/pigment-build
-
-//Value Computed by CMake
-pigment_IS_TOP_LEVEL:STATIC=OFF
-
-//Value Computed by CMake
-pigment_SOURCE_DIR:STATIC=/doc/code/blockit/build/_deps/pigment-src
 
 
 ########################
@@ -475,7 +459,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=4
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=3
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

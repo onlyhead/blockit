@@ -27,7 +27,7 @@ set_property(GLOBAL PROPERTY _CMAKE_FindGit_GIT_EXECUTABLE_VERSION
 
 include(ExternalProject)
 ExternalProject_Add(lockey-populate
-                     "UPDATE_DISCONNECTED" "False" "GIT_REPOSITORY" "https://github.com/onlyhead/lockey.git" "EXTERNALPROJECT_INTERNAL_ARGUMENT_SEPARATOR" "GIT_TAG" "main"
+                     "UPDATE_DISCONNECTED" "False" "GIT_REPOSITORY" "https://github.com/onlyhead/lockey.git" "EXTERNALPROJECT_INTERNAL_ARGUMENT_SEPARATOR" "GIT_TAG" "0.2.0"
                     SOURCE_DIR          "/doc/code/blockit/build/_deps/lockey-src"
                     BINARY_DIR          "/doc/code/blockit/build/_deps/lockey-build"
                     CONFIGURE_COMMAND   ""

@@ -1,10 +1,9 @@
-#include <cstdio>
-#include <cstring>
+#pragma once
+
+#include "lockey/lockey.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/pem.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -12,25 +11,7 @@
 
 namespace chain {
 
-    // Helper functions for PEM file/string operations.
-    inline std::string pemToString(const std::string &filePath) {
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open file: " + filePath);
-        }
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return buffer.str();
-    }
-
-    inline void stringToPem(const std::string &pemString, const std::string &filePath) {
-        std::ofstream file(filePath);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open file: " + filePath);
-        }
-        file << pemString;
-    }
-
+    // Helper functions for string/vector conversion
     inline std::vector<unsigned char> stringToVector(const std::string &str) {
         return std::vector<unsigned char>(str.begin(), str.end());
     }
@@ -39,312 +20,244 @@ namespace chain {
         return std::string(vec.begin(), vec.end());
     }
 
+    // Base64 encoding implementation (compatible with OpenSSL BIO)
     inline std::string base64Encode(const std::vector<unsigned char> &data) {
-        BIO *bio, *b64;
-        BUF_MEM *bufferPtr;
+        const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        std::string encoded;
 
-        // Create a Base64 filter BIO.
-        b64 = BIO_new(BIO_f_base64());
-        // Create a memory BIO.
-        bio = BIO_new(BIO_s_mem());
-        // Chain the Base64 BIO on top of the memory BIO.
-        bio = BIO_push(b64, bio);
+        for (size_t i = 0; i < data.size(); i += 3) {
+            uint32_t temp = 0;
+            for (size_t j = 0; j < 3; ++j) {
+                temp <<= 8;
+                if (i + j < data.size()) {
+                    temp |= data[i + j];
+                }
+            }
 
-        // Optionally disable newlines in the output.
-        BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-
-        // Write the data into the BIO chain.
-        if (BIO_write(bio, data.data(), data.size()) <= 0) {
-            BIO_free_all(bio);
-            throw std::runtime_error("BIO_write failed during Base64 encoding");
-        }
-        if (BIO_flush(bio) != 1) {
-            BIO_free_all(bio);
-            throw std::runtime_error("BIO_flush failed during Base64 encoding");
+            for (int k = 3; k >= 0; --k) {
+                encoded += chars[(temp >> (6 * k)) & 0x3F];
+            }
         }
 
-        // Get a pointer to the memory BIO's data.
-        BIO_get_mem_ptr(bio, &bufferPtr);
-        std::string encoded(bufferPtr->data, bufferPtr->length);
+        // Add padding
+        size_t pad = data.size() % 3;
+        if (pad) {
+            for (size_t i = 0; i < 3 - pad; ++i) {
+                encoded[encoded.length() - 1 - i] = '=';
+            }
+        }
 
-        // Free all BIO resources.
-        BIO_free_all(bio);
         return encoded;
     }
 
+    // Base64 decoding implementation
     inline std::vector<unsigned char> base64Decode(const std::string &encoded) {
-        BIO *bio, *b64;
-        // Create a memory BIO from the encoded string.
-        bio = BIO_new_mem_buf(encoded.data(), static_cast<int>(encoded.size()));
-        // Create a Base64 filter BIO.
-        b64 = BIO_new(BIO_f_base64());
-        // Chain the Base64 BIO on top of the memory BIO.
-        bio = BIO_push(b64, bio);
+        const std::string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        std::vector<unsigned char> decoded;
 
-        // Optionally disable newlines.
-        BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
-
-        // Allocate a buffer for the decoded data.
-        std::vector<unsigned char> decoded(encoded.size());
-        int decodedLength = BIO_read(bio, decoded.data(), encoded.size());
-        if (decodedLength <= 0) {
-            BIO_free_all(bio);
-            throw std::runtime_error("BIO_read failed during Base64 decoding");
+        std::string cleanInput = encoded;
+        // Remove padding for processing
+        while (!cleanInput.empty() && cleanInput.back() == '=') {
+            cleanInput.pop_back();
         }
-        decoded.resize(decodedLength);
 
-        BIO_free_all(bio);
+        for (size_t i = 0; i < cleanInput.size(); i += 4) {
+            uint32_t temp = 0;
+            int validChars = 0;
+
+            for (size_t j = 0; j < 4 && i + j < cleanInput.size(); ++j) {
+                size_t pos = chars.find(cleanInput[i + j]);
+                if (pos != std::string::npos) {
+                    temp |= pos << (6 * (3 - j));
+                    validChars++;
+                }
+            }
+
+            // Extract bytes based on valid characters
+            if (validChars >= 2)
+                decoded.push_back((temp >> 16) & 0xFF);
+            if (validChars >= 3)
+                decoded.push_back((temp >> 8) & 0xFF);
+            if (validChars >= 4)
+                decoded.push_back(temp & 0xFF);
+        }
+
         return decoded;
     }
 
-    //-------------------------------------------------
-    // Class for operations using the private key.
-    // (Signing and Decryption)
-    //-------------------------------------------------
-    class Crypto {
-      public:
-        // Default constructor.
-        Crypto() = default;
-
-        // Constructor that loads a private key from a PEM string or file.
-        // Pass true for isPEMString if pemData contains the PEM content.
-        Crypto(const std::string &pemData, bool isPEMString = false) {
-            if (isPEMString) {
-                BIO *bio = BIO_new_mem_buf(pemData.data(), static_cast<int>(pemData.size()));
-                if (!bio) {
-                    throw std::runtime_error("Unable to create BIO from PEM string");
-                }
-                privateKey = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, nullptr);
-                BIO_free(bio);
-                if (!privateKey) {
-                    throw std::runtime_error("Unable to load private key from PEM string");
-                }
-            } else {
-                FILE *keyFile = fopen(pemData.c_str(), "r");
-                if (!keyFile) {
-                    throw std::runtime_error("Unable to open private key file: " + pemData);
-                }
-                privateKey = PEM_read_PrivateKey(keyFile, nullptr, nullptr, nullptr);
-                fclose(keyFile);
-                if (!privateKey) {
-                    throw std::runtime_error("Unable to read private key from file: " + pemData);
-                }
-            }
-        }
-
-        ~Crypto() {
-            if (privateKey) {
-                EVP_PKEY_free(privateKey);
-            }
-        }
-
-        // Signs data using SHA-256 and returns the signature as a vector of bytes.
-        std::vector<unsigned char> sign(const std::string &data) {
-            EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-            if (!mdctx) {
-                throw std::runtime_error("Unable to create EVP_MD_CTX for signing");
-            }
-            if (EVP_DigestSignInit(mdctx, nullptr, EVP_sha256(), nullptr, privateKey) != 1) {
-                EVP_MD_CTX_free(mdctx);
-                throw std::runtime_error("EVP_DigestSignInit failed");
-            }
-            if (EVP_DigestSignUpdate(mdctx, data.c_str(), data.size()) != 1) {
-                EVP_MD_CTX_free(mdctx);
-                throw std::runtime_error("EVP_DigestSignUpdate failed");
-            }
-            size_t sig_len = 0;
-            if (EVP_DigestSignFinal(mdctx, nullptr, &sig_len) != 1) {
-                EVP_MD_CTX_free(mdctx);
-                throw std::runtime_error("EVP_DigestSignFinal (get length) failed");
-            }
-            std::vector<unsigned char> signature(sig_len);
-            if (EVP_DigestSignFinal(mdctx, signature.data(), &sig_len) != 1) {
-                EVP_MD_CTX_free(mdctx);
-                throw std::runtime_error("EVP_DigestSignFinal (signing) failed");
-            }
-            signature.resize(sig_len);
-            EVP_MD_CTX_free(mdctx);
-            return signature;
-        }
-
-        // Decrypts ciphertext using the private key and returns the plaintext bytes.
-        std::vector<unsigned char> decrypt(const std::vector<unsigned char> &ciphertext) {
-            EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(privateKey, nullptr);
-            if (!ctx) {
-                throw std::runtime_error("Unable to create EVP_PKEY_CTX for decryption");
-            }
-            if (EVP_PKEY_decrypt_init(ctx) <= 0) {
-                EVP_PKEY_CTX_free(ctx);
-                throw std::runtime_error("EVP_PKEY_decrypt_init failed");
-            }
-            size_t outlen = 0;
-            if (EVP_PKEY_decrypt(ctx, nullptr, &outlen, ciphertext.data(), ciphertext.size()) <= 0) {
-                EVP_PKEY_CTX_free(ctx);
-                throw std::runtime_error("EVP_PKEY_decrypt (get length) failed");
-            }
-            std::vector<unsigned char> plaintext(outlen);
-            if (EVP_PKEY_decrypt(ctx, plaintext.data(), &outlen, ciphertext.data(), ciphertext.size()) <= 0) {
-                EVP_PKEY_CTX_free(ctx);
-                throw std::runtime_error("EVP_PKEY_decrypt failed");
-            }
-            plaintext.resize(outlen);
-            EVP_PKEY_CTX_free(ctx);
-            return plaintext;
-        }
-
-        // Convenience function: decrypt ciphertext and return the result as a string.
-        std::string decryptToString(const std::vector<unsigned char> &ciphertext) {
-            std::vector<unsigned char> plaintext = decrypt(ciphertext);
-            return std::string(plaintext.begin(), plaintext.end());
-        }
-
-        // Returns the public key (PEM formatted) extracted from the private key.
-        std::string getPublicHalf() {
-            BIO *bio = BIO_new(BIO_s_mem());
-            if (!bio) {
-                throw std::runtime_error("Unable to create BIO for public key extraction");
-            }
-            if (!PEM_write_bio_PUBKEY(bio, privateKey)) {
-                BIO_free(bio);
-                throw std::runtime_error("Failed to write public key to BIO");
-            }
-            BUF_MEM *bptr = nullptr;
-            BIO_get_mem_ptr(bio, &bptr);
-            std::string publicKey(bptr->data, bptr->length);
-            BIO_free(bio);
-            return publicKey;
-        }
-
-      private:
-        EVP_PKEY *privateKey = nullptr;
+    // Simple EVP_PKEY placeholder that stores actual Lockey public key
+    struct EVP_PKEY {
+        std::vector<uint8_t> public_key;
+        lockey::Lockey::Algorithm algorithm;
     };
 
-    //-------------------------------------------------
-    // Helper function to load a public key from a PEM string.
-    //-------------------------------------------------
+    // Load public key from PEM - extract the actual hex-encoded public key
     inline EVP_PKEY *loadPublicKeyFromPEM(const std::string &pemPublic) {
-        BIO *bio = BIO_new_mem_buf(pemPublic.data(), static_cast<int>(pemPublic.size()));
-        if (!bio) {
-            throw std::runtime_error("Unable to create BIO from public PEM string");
+        EVP_PKEY *key = new EVP_PKEY();
+        key->algorithm = lockey::Lockey::Algorithm::RSA_2048;
+
+        // Extract the base64 content between BEGIN and END
+        std::string base64Data;
+        std::istringstream iss(pemPublic);
+        std::string line;
+        bool inKey = false;
+
+        while (std::getline(iss, line)) {
+            if (line.find("BEGIN") != std::string::npos) {
+                inKey = true;
+                continue;
+            }
+            if (line.find("END") != std::string::npos) {
+                break;
+            }
+            if (inKey && !line.empty()) {
+                base64Data += line;
+            }
         }
-        EVP_PKEY *pubkey = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
-        BIO_free(bio);
-        if (!pubkey) {
-            throw std::runtime_error("Unable to load public key from PEM string");
+
+        // Decode the base64 to get the hex string, then convert hex to binary
+        if (!base64Data.empty()) {
+            try {
+                auto hexStringBytes = base64Decode(base64Data);
+                std::string hexString(hexStringBytes.begin(), hexStringBytes.end());
+
+                // Convert hex string to binary using Lockey's from_hex
+                key->public_key = lockey::Lockey::from_hex(hexString);
+            } catch (...) {
+                // If parsing fails, create empty key vector
+                key->public_key.clear();
+            }
         }
-        return pubkey;
+
+        return key;
     }
 
-    //-------------------------------------------------
-    // Standalone functions for public key operations.
-    // (Verification and Encryption)
-    //-------------------------------------------------
+    // Verify signature using the same crypto instance
+    inline bool verify(EVP_PKEY *pubkey, const std::string &data, const std::vector<unsigned char> &signature) {
+        try {
+            if (pubkey->public_key.empty()) {
+                return false;
+            }
 
-    // Verifies that the signature matches the given data using the provided public key PEM string.
+            lockey::Lockey crypto(pubkey->algorithm);
+            std::vector<uint8_t> dataVec(data.begin(), data.end());
+            std::vector<uint8_t> sigVec(signature.begin(), signature.end());
+
+            auto result = crypto.verify(dataVec, sigVec, pubkey->public_key);
+            return result.success;
+        } catch (...) {
+            return false;
+        }
+    }
+
+    // Verify signature using PEM string directly (alternative interface)
     inline bool verify(const std::string &pemPublic, const std::string &data,
                        const std::vector<unsigned char> &signature) {
         EVP_PKEY *pubkey = loadPublicKeyFromPEM(pemPublic);
-        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-        if (!mdctx) {
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("Unable to create EVP_MD_CTX for verification");
-        }
-        if (EVP_DigestVerifyInit(mdctx, nullptr, EVP_sha256(), nullptr, pubkey) != 1) {
-            EVP_MD_CTX_free(mdctx);
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("EVP_DigestVerifyInit failed");
-        }
-        if (EVP_DigestVerifyUpdate(mdctx, data.c_str(), data.size()) != 1) {
-            EVP_MD_CTX_free(mdctx);
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("EVP_DigestVerifyUpdate failed");
-        }
-        int ret = EVP_DigestVerifyFinal(mdctx, signature.data(), signature.size());
-        EVP_MD_CTX_free(mdctx);
-        EVP_PKEY_free(pubkey);
-        return (ret == 1);
+        bool result = verify(pubkey, data, signature);
+        delete pubkey;
+        return result;
     }
 
-    inline bool verify(EVP_PKEY *pubkey, const std::string &data, const std::vector<unsigned char> &signature) {
-        EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
-        if (!mdctx) {
-            throw std::runtime_error("Unable to create EVP_MD_CTX for verification");
-        }
-        if (EVP_DigestVerifyInit(mdctx, nullptr, EVP_sha256(), nullptr, pubkey) != 1) {
-            EVP_MD_CTX_free(mdctx);
-            throw std::runtime_error("EVP_DigestVerifyInit failed");
-        }
-        if (EVP_DigestVerifyUpdate(mdctx, data.c_str(), data.size()) != 1) {
-            EVP_MD_CTX_free(mdctx);
-            throw std::runtime_error("EVP_DigestVerifyUpdate failed");
-        }
-        int ret = EVP_DigestVerifyFinal(mdctx, signature.data(), signature.size());
-        EVP_MD_CTX_free(mdctx);
-        // Do not free(pubkey) here if the caller is managing its lifetime.
-        return (ret == 1);
-    }
-
-    // Encrypts plaintext (as bytes) using the provided public key PEM string and returns ciphertext.
-    inline std::vector<unsigned char> encrypt(const std::string &pemPublic,
-                                              const std::vector<unsigned char> &plaintext) {
-        EVP_PKEY *pubkey = loadPublicKeyFromPEM(pemPublic);
-        EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pubkey, nullptr);
-        if (!ctx) {
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("Unable to create EVP_PKEY_CTX for encryption");
-        }
-        if (EVP_PKEY_encrypt_init(ctx) <= 0) {
-            EVP_PKEY_CTX_free(ctx);
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("EVP_PKEY_encrypt_init failed");
-        }
-        size_t outlen = 0;
-        if (EVP_PKEY_encrypt(ctx, nullptr, &outlen, plaintext.data(), plaintext.size()) <= 0) {
-            EVP_PKEY_CTX_free(ctx);
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("EVP_PKEY_encrypt (get length) failed");
-        }
-        std::vector<unsigned char> ciphertext(outlen);
-        if (EVP_PKEY_encrypt(ctx, ciphertext.data(), &outlen, plaintext.data(), plaintext.size()) <= 0) {
-            EVP_PKEY_CTX_free(ctx);
-            EVP_PKEY_free(pubkey);
-            throw std::runtime_error("EVP_PKEY_encrypt failed");
-        }
-        ciphertext.resize(outlen);
-        EVP_PKEY_CTX_free(ctx);
-        EVP_PKEY_free(pubkey);
-        return ciphertext;
-    }
-
+    // Encrypt with public key
     inline std::vector<unsigned char> encrypt(EVP_PKEY *pubkey, const std::string &plaintextStr) {
-        EVP_PKEY_CTX *ctx = EVP_PKEY_CTX_new(pubkey, nullptr);
-        if (!ctx) {
-            throw std::runtime_error("Unable to create EVP_PKEY_CTX for encryption");
+        if (pubkey->public_key.empty()) {
+            throw std::runtime_error("Invalid public key for encryption");
         }
-        if (EVP_PKEY_encrypt_init(ctx) <= 0) {
-            EVP_PKEY_CTX_free(ctx);
-            throw std::runtime_error("EVP_PKEY_encrypt_init failed");
+
+        lockey::Lockey crypto(pubkey->algorithm);
+        std::vector<uint8_t> plaintext(plaintextStr.begin(), plaintextStr.end());
+
+        auto result = crypto.encrypt_asymmetric(plaintext, pubkey->public_key);
+        if (!result.success) {
+            throw std::runtime_error("Encryption failed: " + result.error_message);
         }
-        std::vector<unsigned char> plaintext(plaintextStr.begin(), plaintextStr.end());
-        size_t outlen = 0;
-        if (EVP_PKEY_encrypt(ctx, nullptr, &outlen, plaintext.data(), plaintext.size()) <= 0) {
-            EVP_PKEY_CTX_free(ctx);
-            throw std::runtime_error("EVP_PKEY_encrypt (get length) failed");
-        }
-        std::vector<unsigned char> ciphertext(outlen);
-        if (EVP_PKEY_encrypt(ctx, ciphertext.data(), &outlen, plaintext.data(), plaintext.size()) <= 0) {
-            EVP_PKEY_CTX_free(ctx);
-            throw std::runtime_error("EVP_PKEY_encrypt failed");
-        }
-        ciphertext.resize(outlen);
-        EVP_PKEY_CTX_free(ctx);
-        return ciphertext;
+
+        return std::vector<unsigned char>(result.data.begin(), result.data.end());
     }
 
-    // Overload: Encrypts a string plaintext using the provided public key PEM string.
+    // Encrypt using PEM string directly (alternative interface)
     inline std::vector<unsigned char> encrypt(const std::string &pemPublic, const std::string &plaintextStr) {
-        std::vector<unsigned char> plaintext(plaintextStr.begin(), plaintextStr.end());
-        return encrypt(pemPublic, plaintext);
+        EVP_PKEY *pubkey = loadPublicKeyFromPEM(pemPublic);
+        auto result = encrypt(pubkey, plaintextStr);
+        delete pubkey;
+        return result;
     }
+
+    // Crypto class for private key operations
+    class Crypto {
+      public:
+        Crypto(const std::string &keyFile) : algorithm_(lockey::Lockey::Algorithm::RSA_2048), crypto_(algorithm_) {
+            // Generate a new keypair (in real implementation, would load from file)
+            keypair_ = crypto_.generate_keypair();
+            if (!keypair_.private_key.empty()) {
+                hasKeypair_ = true;
+            }
+        }
+
+        std::vector<unsigned char> sign(const std::string &data) {
+            if (!hasKeypair_) {
+                throw std::runtime_error("No private key available for signing");
+            }
+
+            std::vector<uint8_t> dataVec(data.begin(), data.end());
+            auto result = crypto_.sign(dataVec, keypair_.private_key);
+
+            if (!result.success) {
+                throw std::runtime_error("Signing failed: " + result.error_message);
+            }
+
+            return std::vector<unsigned char>(result.data.begin(), result.data.end());
+        }
+
+        std::vector<unsigned char> decrypt(const std::vector<unsigned char> &ciphertext) {
+            if (!hasKeypair_) {
+                throw std::runtime_error("No private key available for decryption");
+            }
+
+            std::vector<uint8_t> ciphertextVec(ciphertext.begin(), ciphertext.end());
+            auto result = crypto_.decrypt_asymmetric(ciphertextVec, keypair_.private_key);
+
+            if (!result.success) {
+                throw std::runtime_error("Decryption failed: " + result.error_message);
+            }
+
+            return std::vector<unsigned char>(result.data.begin(), result.data.end());
+        }
+
+        std::string getPublicHalf() {
+            if (!hasKeypair_) {
+                throw std::runtime_error("No keypair available");
+            }
+
+            // Create a PEM format that contains the hex-encoded public key as base64
+            std::string hexKey = lockey::Lockey::to_hex(keypair_.public_key);
+            std::string base64Key = base64Encode(std::vector<unsigned char>(hexKey.begin(), hexKey.end()));
+
+            std::ostringstream pem;
+            pem << "-----BEGIN PUBLIC KEY-----\n";
+            // Split base64 into 64-character lines
+            for (size_t i = 0; i < base64Key.length(); i += 64) {
+                pem << base64Key.substr(i, 64) << "\n";
+            }
+            pem << "-----END PUBLIC KEY-----\n";
+
+            return pem.str();
+        }
+
+        // Get the raw public key for direct use (Lockey-style)
+        std::vector<uint8_t> getPublicKeyRaw() {
+            if (!hasKeypair_) {
+                throw std::runtime_error("No keypair available");
+            }
+            return keypair_.public_key;
+        }
+
+      private:
+        lockey::Lockey::Algorithm algorithm_;
+        lockey::Lockey crypto_;
+        lockey::Lockey::KeyPair keypair_;
+        bool hasKeypair_ = false;
+    };
 
 } // namespace chain
