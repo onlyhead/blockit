@@ -37,6 +37,8 @@ namespace chain {
             Block blockToAdd = newBlock;
             blockToAdd.previous_hash_ = blocks_.back().hash_;
             blockToAdd.index_ = blocks_.back().index_ + 1;
+            // Recalculate hash after updating previous_hash and index
+            blockToAdd.hash_ = blockToAdd.calculateHash();
             if (!blockToAdd.isValid()) {
                 std::cout << "Invalid block attempted to be added to the blockchain" << std::endl;
                 return;

@@ -15,7 +15,6 @@ namespace chain {
     struct Timestamp {
         int32_t sec;
         uint32_t nanosec;
-
         Timestamp() : sec(0), nanosec(0) {}
         Timestamp(int32_t s, uint32_t ns) : sec(s), nanosec(ns) {}
     };

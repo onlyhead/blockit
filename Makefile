@@ -16,6 +16,21 @@ $(info ------------------------------------------)
 
 
 build:
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+		echo "Build directory doesn't exist, running compile first..."; \
+		$(MAKE) compile; \
+	else \
+		CURRENT_FILES=$$(find examples/ test/ -name '*.cpp' 2>/dev/null | sort); \
+		if [ -f "$(BUILD_DIR)/.file_list" ]; then \
+			CACHED_FILES=$$(cat "$(BUILD_DIR)/.file_list"); \
+		else \
+			CACHED_FILES=""; \
+		fi; \
+		if [ "$$CURRENT_FILES" != "$$CACHED_FILES" ]; then \
+			echo "File changes detected in examples/ or test/, recompiling..."; \
+			$(MAKE) compile; \
+		fi; \
+	fi
 	@cd $(BUILD_DIR) && make -j$(shell nproc) 2>&1 | tee >(grep "^$(TOP_HEAD)" | grep -E "error:" > "$(TOP_HEAD)/.quickfix") || true
 
 b: build
