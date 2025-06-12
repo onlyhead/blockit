@@ -1,1 +1,0 @@
-/nix/store/0fsnicvfpf55nkza12cjnad0w84d6ba7-gcc-wrapper-14.2.1.20250322/bin/g++ -Wl,--dependency-file=CMakeFiles/main.dir/link.d CMakeFiles/main.dir/examples/main.cpp.o -o main
