@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0] - 2025-06-12
+
+### <!-- 0 -->⛰️  Features
+
+- Add unified serialization and persistent storage
+- Refactor and expand core blockchain features
+- Add new features and update documentation
+- Add farm example and introduce authorization manager
+- Implement core blockchain data structures and validation
+
 ## [0.0.3] - 2025-06-12
 
 ### <!-- 0 -->⛰️  Features
