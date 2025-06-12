@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "signer.hpp"
@@ -19,16 +20,29 @@ namespace chain {
         Timestamp(int32_t s, uint32_t ns) : sec(s), nanosec(ns) {}
     };
 
-    class Transaction {
+    // SFINAE helper to check if T has a to_string() method
+    template <typename T> class has_to_string {
+      private:
+        template <typename U> static auto test(int) -> decltype(std::declval<U>().to_string(), std::true_type{});
+        template <typename> static std::false_type test(...);
+
+      public:
+        static constexpr bool value = decltype(test<T>(0))::value;
+    };
+
+    template <typename T> class Transaction {
+        static_assert(has_to_string<T>::value,
+                      "Type T must have a 'operator std::string() const { return value_; }' method");
+
       public:
         Timestamp timestamp_;
         int16_t priority_;
         std::string uuid_;
-        std::string function_;
+        T function_;
         std::vector<unsigned char> signature_;
 
         Transaction() = default;
-        Transaction(std::string uuid, std::string function, int16_t priority = 100) {
+        Transaction(std::string uuid, T function, int16_t priority = 100) {
             priority_ = priority;
             uuid_ = uuid;
             function_ = function;
@@ -45,7 +59,8 @@ namespace chain {
 
         // Method to verify the transaction signature
         bool isValid() const {
-            if (uuid_.empty() || function_.empty() || signature_.empty() || priority_ < 0 || priority_ > 255) {
+            if (uuid_.empty() || function_.to_string().empty() || signature_.empty() || priority_ < 0 ||
+                priority_ > 255) {
                 return false;
             }
             // TODO: Implement actual signature verification
@@ -54,7 +69,7 @@ namespace chain {
 
         std::string toString() const {
             std::stringstream ss;
-            ss << timestamp_.sec << timestamp_.nanosec << priority_ << uuid_ << function_;
+            ss << timestamp_.sec << timestamp_.nanosec << priority_ << uuid_ << function_.to_string();
             return ss.str();
         }
     };

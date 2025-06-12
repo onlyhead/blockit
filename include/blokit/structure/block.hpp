@@ -13,17 +13,17 @@
 using namespace std::chrono;
 
 namespace chain {
-    class Block {
+    template <typename T> class Block {
       public:
         int64_t index_;
         std::string previous_hash_;
         std::string hash_;
-        std::vector<Transaction> transactions_;
+        std::vector<Transaction<T>> transactions_;
         int64_t nonce_;
         Timestamp timestamp_;
 
         Block() = default;
-        Block(std::vector<Transaction> txns) {
+        Block(std::vector<Transaction<T>> txns) {
             index_ = 0;
             previous_hash_ = "GENESIS";
             transactions_ = txns;

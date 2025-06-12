@@ -9,32 +9,32 @@
 using namespace std::chrono;
 
 namespace chain {
-    class Chain {
+    template <typename T> class Chain {
       public:
         std::string uuid_;
         Timestamp timestamp_;
-        std::vector<Block> blocks_;
+        std::vector<Block<T>> blocks_;
 
         Chain() = default;
-        Chain(std::string s_uuid, std::string t_uuid, std::string function, std::shared_ptr<chain::Crypto> privateKey_,
+        Chain(std::string s_uuid, std::string t_uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
               int16_t priority = 100) {
-            Transaction genesisTransaction(t_uuid, function, priority);
+            Transaction<T> genesisTransaction(t_uuid, function, priority);
             genesisTransaction.signTransaction(privateKey_);
-            Block genesisBlock({genesisTransaction});
+            Block<T> genesisBlock({genesisTransaction});
             blocks_.push_back(genesisBlock);
             uuid_ = s_uuid;
         }
 
-        Chain(std::string s_uuid, std::string t_uuid, std::string function, int16_t priority = 100) {
-            Transaction genesisTransaction(t_uuid, function, priority);
-            Block genesisBlock({genesisTransaction});
+        Chain(std::string s_uuid, std::string t_uuid, T function, int16_t priority = 100) {
+            Transaction<T> genesisTransaction(t_uuid, function, priority);
+            Block<T> genesisBlock({genesisTransaction});
             blocks_.push_back(genesisBlock);
             uuid_ = s_uuid;
         }
 
         // Method to add a new block to the blockchain
-        void addBlock(const Block &newBlock) {
-            Block blockToAdd = newBlock;
+        void addBlock(const Block<T> &newBlock) {
+            Block<T> blockToAdd = newBlock;
             blockToAdd.previous_hash_ = blocks_.back().hash_;
             blockToAdd.index_ = blocks_.back().index_ + 1;
             // Recalculate hash after updating previous_hash and index
@@ -47,11 +47,11 @@ namespace chain {
             blocks_.push_back(blockToAdd);
         }
 
-        void addBlock(std::string uuid, std::string function, std::shared_ptr<chain::Crypto> privateKey_,
+        void addBlock(std::string uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
                       int16_t priority = 100) {
-            Transaction genesisTransaction(uuid, function, priority);
+            Transaction<T> genesisTransaction(uuid, function, priority);
             genesisTransaction.signTransaction(privateKey_);
-            Block genesisBlock({genesisTransaction});
+            Block<T> genesisBlock({genesisTransaction});
             addBlock(genesisBlock);
         }
 
@@ -64,8 +64,8 @@ namespace chain {
                 return true;
             }
             for (size_t i = 1; i < blocks_.size(); i++) {
-                const Block &currentBlock_ = blocks_[i];
-                const Block &previousBlock = blocks_[i - 1];
+                const Block<T> &currentBlock_ = blocks_[i];
+                const Block<T> &previousBlock = blocks_[i - 1];
 
                 // Check if the current block's hash is correct
                 if (currentBlock_.hash_ != currentBlock_.calculateHash()) {
