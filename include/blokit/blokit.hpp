@@ -1,4 +1,4 @@
-#include "blokit/structure/account.hpp"
+#include "blokit/structure/auth.hpp"
 #include "blokit/structure/block.hpp"
 #include "blokit/structure/chain.hpp"
 #include "blokit/structure/merkle.hpp"

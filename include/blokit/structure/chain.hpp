@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include "account.hpp"
+#include "auth.hpp"
 #include "block.hpp"
 
 using namespace std::chrono;
@@ -15,7 +15,7 @@ namespace chain {
         std::string uuid_;
         Timestamp timestamp_;
         std::vector<Block<T>> blocks_;
-        EntityManager entity_manager_; // For robot/entity coordination and duplicate prevention
+        EntityManager entity_manager_; // For participant authentication and authorization management
 
         Chain() = default;
         inline Chain(std::string s_uuid, std::string t_uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
@@ -105,30 +105,67 @@ namespace chain {
             return true;
         }
 
-        // Register an entity (robot/system) in the blockchain
+        // Register an entity/participant in the blockchain
         inline void registerEntity(const std::string &entity_id, const std::string &initial_state = "inactive") {
-            entity_manager_.registerEntity(entity_id, initial_state);
+            entity_manager_.registerParticipant(entity_id, initial_state);
         }
 
-        // Check if entity is authorized
+        // Generic method for registering participants with metadata
+        inline void registerParticipant(const std::string &participant_id,
+                                        const std::string &initial_state = "inactive",
+                                        const std::unordered_map<std::string, std::string> &metadata = {}) {
+            entity_manager_.registerParticipant(participant_id, initial_state, metadata);
+        }
+
+        // Check if entity/participant is authorized
         inline bool isEntityAuthorized(const std::string &entity_id) const {
-            return entity_manager_.isEntityAuthorized(entity_id);
+            return entity_manager_.isParticipantAuthorized(entity_id);
         }
 
-        // Update entity state
+        inline bool isParticipantAuthorized(const std::string &participant_id) const {
+            return entity_manager_.isParticipantAuthorized(participant_id);
+        }
+
+        // Update entity/participant state
         inline bool updateEntityState(const std::string &entity_id, const std::string &new_state) {
-            return entity_manager_.updateEntityState(entity_id, new_state);
+            return entity_manager_.updateParticipantState(entity_id, new_state);
         }
 
-        // Grant permission to entity
+        inline bool updateParticipantState(const std::string &participant_id, const std::string &new_state) {
+            return entity_manager_.updateParticipantState(participant_id, new_state);
+        }
+
+        // Grant permission/capability
         inline void grantPermission(const std::string &entity_id, const std::string &permission) {
-            entity_manager_.grantPermission(entity_id, permission);
+            entity_manager_.grantCapability(entity_id, permission);
+        }
+
+        inline void grantCapability(const std::string &participant_id, const std::string &capability) {
+            entity_manager_.grantCapability(participant_id, capability);
+        }
+
+        // Metadata management
+        inline std::string getParticipantMetadata(const std::string &participant_id, const std::string &key) const {
+            return entity_manager_.getParticipantMetadata(participant_id, key);
+        }
+
+        inline void setParticipantMetadata(const std::string &participant_id, const std::string &key,
+                                           const std::string &value) {
+            entity_manager_.setParticipantMetadata(participant_id, key, value);
         }
 
         // Execute a command through the blockchain
         inline bool executeCommand(const std::string &issuer_entity, const std::string &command,
                                    const std::string &tx_id, const std::string &required_permission = "") {
-            return entity_manager_.executeCommand(issuer_entity, command, tx_id, required_permission);
+            return entity_manager_.validateAndRecordAction(issuer_entity, command, tx_id, required_permission);
+        }
+
+        // Generic action validation and recording
+        inline bool validateAndRecordAction(const std::string &issuer_participant,
+                                            const std::string &action_description, const std::string &tx_id,
+                                            const std::string &required_capability = "") {
+            return entity_manager_.validateAndRecordAction(issuer_participant, action_description, tx_id,
+                                                           required_capability);
         }
 
         // Get blockchain statistics
@@ -149,7 +186,7 @@ namespace chain {
                 std::cout << "Latest Block Hash: " << blocks_.back().hash_.substr(0, 16) << "..." << std::endl;
             }
 
-            std::cout << "\nEntity Manager:" << std::endl;
+            std::cout << "\nAuthenticator:" << std::endl;
             entity_manager_.printSystemSummary();
         }
     };

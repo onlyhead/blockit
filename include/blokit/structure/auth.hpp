@@ -9,9 +9,9 @@
 
 namespace chain {
 
-    // Generic authorization and ledger management system
+    // Generic authentication and authorization system for blockchain participants
     // Can be used for robots, farming equipment, IoT devices, industrial systems, etc.
-    class AuthorizationManager {
+    class Authenticator {
       private:
         std::unordered_set<std::string> authorized_participants_;         // Participants allowed in the chain
         std::unordered_set<std::string> used_transaction_ids_;            // Prevent duplicate transactions/actions
@@ -22,7 +22,7 @@ namespace chain {
             participant_metadata_; // Additional metadata
 
       public:
-        AuthorizationManager() = default;
+        Authenticator() = default;
 
         // Register a participant (robot, tractor, sensor, device, etc.) in the chain
         inline void registerParticipant(const std::string &participant_id,
@@ -141,7 +141,7 @@ namespace chain {
 
         // Print system summary
         inline void printSystemSummary() const {
-            std::cout << "=== Authorization Manager Summary ===" << std::endl;
+            std::cout << "=== Authenticator Summary ===" << std::endl;
             std::cout << "Authorized Participants (" << authorized_participants_.size() << "):" << std::endl;
             for (const auto &participant : authorized_participants_) {
                 std::cout << "  " << participant << " (state: " << getParticipantState(participant) << ")" << std::endl;
@@ -171,8 +171,9 @@ namespace chain {
     };
 
     // Alias for backward compatibility and specific use cases
-    using EntityManager = AuthorizationManager; // For robot/entity coordination
-    using LedgerManager = AuthorizationManager; // For ledger tracking systems
-    using DeviceManager = AuthorizationManager; // For IoT device management
+    using EntityManager = Authenticator;        // For robot/entity coordination
+    using LedgerManager = Authenticator;        // For ledger tracking systems
+    using DeviceManager = Authenticator;        // For IoT device management
+    using AuthorizationManager = Authenticator; // For backward compatibility
 
 } // namespace chain
