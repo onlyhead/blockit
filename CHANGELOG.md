@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1] - 2025-06-12
+
+### <!-- 2 -->🚜 Refactor
+
+- Refactor serialization logic and improve test legibility
+
 ## [0.1.0] - 2025-06-12
 
 ### <!-- 0 -->⛰️  Features
