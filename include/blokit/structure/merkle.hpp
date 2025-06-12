@@ -125,6 +125,17 @@ namespace chain {
             return proof;
         }
 
+        // Get proof for a specific transaction by data
+        inline std::vector<std::string> generateProof(const std::string &transaction_data) const {
+            // Find the index of the transaction
+            for (size_t i = 0; i < leaves_.size(); i++) {
+                if (leaves_[i] == transaction_data) {
+                    return getProof(i);
+                }
+            }
+            return {}; // Return empty proof if transaction not found
+        }
+
         // Verify a transaction is in the tree using proof
         inline bool verifyProof(const std::string &transaction_data, size_t transaction_index,
                                 const std::vector<std::string> &proof) const {
@@ -149,6 +160,18 @@ namespace chain {
             }
 
             return current_hash == root_hash_;
+        }
+
+        // Verify proof using transaction data and root
+        inline bool verifyProof(const std::string &transaction_data, const std::vector<std::string> &proof,
+                                const std::string &expected_root) const {
+            // Find the index of the transaction
+            for (size_t i = 0; i < leaves_.size(); i++) {
+                if (leaves_[i] == transaction_data) {
+                    return verifyProof(transaction_data, i, proof) && (root_hash_ == expected_root);
+                }
+            }
+            return false;
         }
 
         // Print tree structure for debugging

@@ -90,6 +90,15 @@ namespace chain {
             }
         }
 
+        // Remove capability from participant
+        inline void revokeCapability(const std::string &participant_id, const std::string &capability) {
+            if (isParticipantAuthorized(participant_id)) {
+                auto &capabilities = participant_capabilities_[participant_id];
+                capabilities.erase(std::remove(capabilities.begin(), capabilities.end(), capability),
+                                   capabilities.end());
+            }
+        }
+
         // Check if participant has specific capability
         inline bool hasCapability(const std::string &participant_id, const std::string &capability) const {
             auto it = participant_capabilities_.find(participant_id);

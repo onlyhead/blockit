@@ -35,7 +35,7 @@ namespace chain {
         }
 
         // Method to add a new block to the blockchain
-        inline void addBlock(const Block<T> &newBlock) {
+        inline bool addBlock(const Block<T> &newBlock) {
             Block<T> blockToAdd = newBlock;
             blockToAdd.previous_hash_ = blocks_.back().hash_;
             blockToAdd.index_ = blocks_.back().index_ + 1;
@@ -45,11 +45,11 @@ namespace chain {
                 // Check for duplicate transaction
                 if (entity_manager_.isTransactionUsed(txn.uuid_)) {
                     std::cout << "Duplicate transaction detected: " << txn.uuid_ << std::endl;
-                    return;
+                    return false;
                 }
 
                 // For robot coordination, you could add entity authorization checks here
-                // For example: if (!entity_manager_.isEntityAuthorized(txn.issuer_entity_)) { return; }
+                // For example: if (!entity_manager_.isEntityAuthorized(txn.issuer_entity_)) { return false; }
             }
 
             // Rebuild Merkle tree and recalculate hash after updating previous_hash and index
@@ -58,7 +58,7 @@ namespace chain {
 
             if (!blockToAdd.isValid()) {
                 std::cout << "Invalid block attempted to be added to the blockchain" << std::endl;
-                return;
+                return false;
             }
 
             // Mark all transactions as used
@@ -68,14 +68,15 @@ namespace chain {
 
             std::cout << "Adding block to chain" << std::endl;
             blocks_.push_back(blockToAdd);
+            return true;
         }
 
-        inline void addBlock(std::string uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
+        inline bool addBlock(std::string uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
                              int16_t priority = 100) {
             Transaction<T> genesisTransaction(uuid, function, priority);
             genesisTransaction.signTransaction(privateKey_);
             Block<T> genesisBlock({genesisTransaction});
-            addBlock(genesisBlock);
+            return addBlock(genesisBlock);
         }
 
         // Method to validate the integrity of the blockchain
@@ -188,6 +189,42 @@ namespace chain {
 
             std::cout << "\nAuthenticator:" << std::endl;
             entity_manager_.printSystemSummary();
+        }
+
+        // Additional missing methods for comprehensive chain management
+
+        // Check if participant is registered
+        inline bool isParticipantRegistered(const std::string &participant_id) const {
+            return entity_manager_.isParticipantAuthorized(participant_id);
+        }
+
+        // Check if participant can perform specific action (has capability)
+        inline bool canParticipantPerform(const std::string &participant_id, const std::string &capability) const {
+            return entity_manager_.hasCapability(participant_id, capability);
+        }
+
+        // Revoke capability from participant
+        inline void revokeCapability(const std::string &participant_id, const std::string &capability) {
+            entity_manager_.revokeCapability(participant_id, capability);
+        }
+
+        // Check if chain is valid (alias for isValid)
+        inline bool isChainValid() const { return isValid(); }
+
+        // Get chain length
+        inline size_t getChainLength() const { return blocks_.size(); }
+
+        // Get last block
+        inline const Block<T> &getLastBlock() const {
+            if (blocks_.empty()) {
+                throw std::runtime_error("Chain is empty");
+            }
+            return blocks_.back();
+        }
+
+        // Check if transaction is used
+        inline bool isTransactionUsed(const std::string &tx_id) const {
+            return entity_manager_.isTransactionUsed(tx_id);
         }
     };
 } // namespace chain

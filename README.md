@@ -248,7 +248,9 @@ This implementation is **educational only** and lacks several critical features 
 - ✅ ~~No Merkle trees for efficient verification~~ **Merkle trees implemented for efficient verification**
 - ✅ ~~No protection against double spending~~ **Double-spend prevention implemented**
 - ❌ No difficulty adjustment
-- ❌ No fork resolution
+
+## Not gonna be part of this library
+- Fork resolution
 
 ## Dependencies
 
