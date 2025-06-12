@@ -1,0 +1,3 @@
+/doc/code/blockit/build/_deps/pigment-subbuild/CMakeFiles/pigment-populate.dir
+/doc/code/blockit/build/_deps/pigment-subbuild/CMakeFiles/edit_cache.dir
+/doc/code/blockit/build/_deps/pigment-subbuild/CMakeFiles/rebuild_cache.dir

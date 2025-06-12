@@ -1,0 +1,3 @@
+/doc/code/blockit/build/_deps/lockey-subbuild/CMakeFiles/lockey-populate.dir
+/doc/code/blockit/build/_deps/lockey-subbuild/CMakeFiles/edit_cache.dir
+/doc/code/blockit/build/_deps/lockey-subbuild/CMakeFiles/rebuild_cache.dir

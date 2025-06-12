@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/CMakeFiles/pigment-populate"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/CMakeFiles/pigment-populate.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/CMakeFiles/pigment-populate-complete.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-build.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-configure.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-download.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-install.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-mkdir.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-patch.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-test.rule"
+		},
+		{
+			"file" : "/doc/code/blockit/build/_deps/pigment-subbuild/pigment-populate-prefix/src/pigment-populate-stamp/pigment-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"pigment-populate"
+		],
+		"name" : "pigment-populate"
+	}
+}

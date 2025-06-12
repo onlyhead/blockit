@@ -1,0 +1,2 @@
+/nix/store/0fsnicvfpf55nkza12cjnad0w84d6ba7-gcc-wrapper-14.2.1.20250322/bin/ar qc libdoctest_with_main.a CMakeFiles/doctest_with_main.dir/doctest/parts/doctest.cpp.o
+/nix/store/0fsnicvfpf55nkza12cjnad0w84d6ba7-gcc-wrapper-14.2.1.20250322/bin/ranlib libdoctest_with_main.a

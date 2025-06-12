@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.15)
 
-set(project_name blokit)
-
+set(project_name blockit)
 project(${project_name} VERSION 0.0.1 LANGUAGES CXX)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wno-all -Wno-extra -Wno-pedantic -Wno-maybe-uninitialized -Wno-unused-variable -Wno-reorder)
-endif()
+add_compile_options(-Wall -Wextra -Wpedantic)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0135 NEW)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -17,18 +14,21 @@ set(params
     -Wno-reorder
 )
 
-option(BLOKIT_BUILD_EXAMPLES "Build examples" OFF)
+string(TOUPPER ${project_name} project_name_upper)
+option(${project_name_upper}_BUILD_EXAMPLES "Build examples" OFF)
+option(${project_name_upper}_ENABLE_TESTS "Enable tests" OFF)
 include(FetchContent)
 
 # --------------------------------------------------------------------------------------------------
 set(ext_deps)
+FetchContent_Declare(lockey GIT_REPOSITORY https://github.com/onlyhead/lockey.git GIT_TAG main)
+FetchContent_MakeAvailable(lockey)
+list(APPEND ext_deps lockey::lockey)
 
-FetchContent_Declare(pigment GIT_REPOSITORY https://github.com/smolfetch/pigment.git GIT_TAG main)
-FetchContent_MakeAvailable(pigment)
-list(APPEND ext_deps pigment::pigment)
+
 # --------------------------------------------------------------------------------------------------
 add_library(${project_name} INTERFACE)
-# allow users to link to this target with `target_link_libraries(mytarget farmtrax::farmtrax)`
+# Allow users to link via `${project_name}::${project_name}`
 add_library(${project_name}::${project_name} ALIAS ${project_name})
 target_include_directories(${project_name} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -65,24 +65,8 @@ export(EXPORT ${project_name}Targets
 
 
 # --------------------------------------------------------------------------------------------------
-if(BLOKIT_BUILD_EXAMPLES)
-  # add_definitions(-DHAS_RERUN)
-  # set(RERUN_DOWNLOAD_AND_BUILD_ARROW OFF)
-  # FetchContent_Declare(rerun_sdk URL https://github.com/rerun-io/rerun/releases/latest/download/rerun_cpp_sdk.zip)
-  # FetchContent_MakeAvailable(rerun_sdk)
-  # list(APPEND ext_deps rerun_sdk)
-  #
-  # FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog.git GIT_TAG v1.15.0)
-  # FetchContent_MakeAvailable(spdlog)
-  # list(APPEND ext_deps spdlog::spdlog)
-  #
-  # FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz)
-  # FetchContent_MakeAvailable(json)
-  # list(APPEND ext_deps nlohmann_json::nlohmann_json)
-
-  set(exe
-    examples/main.cpp
-  )
+if(${project_name_upper}_BUILD_EXAMPLES)
+  file(GLOB exe examples/*.cpp)
   # ----------------------------------------------
   set(exec_names)
   foreach(src_file IN LISTS exe)
@@ -93,7 +77,6 @@ if(BLOKIT_BUILD_EXAMPLES)
         target_sources(${exec_name} PRIVATE "${lib_file}")
       endforeach()
     target_link_libraries(${exec_name} ${ext_deps})
-    target_link_libraries(${exec_name} ${sys_deps})
     install(TARGETS ${exec_name} DESTINATION bin)
     list(APPEND exec_names ${exec_name})
   endforeach()
@@ -111,3 +94,25 @@ if(BLOKIT_BUILD_EXAMPLES)
   )
 endif()
 
+
+# --------------------------------------------------------------------------------------------------
+if(${project_name_upper}_ENABLE_TESTS)
+  enable_testing()
+  add_definitions(-DENABLE_DOCTEST_IN_LIBRARY)
+  include(FetchContent)
+  FetchContent_Declare(DocTest GIT_REPOSITORY "https://github.com/onqtam/doctest")
+  FetchContent_MakeAvailable(DocTest)
+
+  file(GLOB test_src test/*.cpp)
+
+  foreach(src_file IN LISTS test_src)
+    get_filename_component(test_name "${src_file}" NAME_WE)
+    add_executable(${test_name} "${src_file}")
+      foreach(lib_file IN LISTS internal_deps)
+        target_compile_options(${test_name} PRIVATE ${params})
+        target_sources(${test_name} PRIVATE "${lib_file}")
+      endforeach()
+    target_link_libraries(${test_name} ${ext_deps} doctest_with_main)
+    add_test(NAME ${test_name} COMMAND ${test_name})
+  endforeach()
+endif()
