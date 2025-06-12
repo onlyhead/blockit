@@ -16,8 +16,8 @@ namespace chain {
     struct Timestamp {
         int32_t sec;
         uint32_t nanosec;
-        Timestamp() : sec(0), nanosec(0) {}
-        Timestamp(int32_t s, uint32_t ns) : sec(s), nanosec(ns) {}
+        inline Timestamp() : sec(0), nanosec(0) {}
+        inline Timestamp(int32_t s, uint32_t ns) : sec(s), nanosec(ns) {}
     };
 
     // SFINAE helper to check if T has a to_string() method
@@ -42,7 +42,7 @@ namespace chain {
         std::vector<unsigned char> signature_;
 
         Transaction() = default;
-        Transaction(std::string uuid, T function, int16_t priority = 100) {
+        inline Transaction(std::string uuid, T function, int16_t priority = 100) {
             priority_ = priority;
             uuid_ = uuid;
             function_ = function;
@@ -51,14 +51,14 @@ namespace chain {
                 duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count() % 1000000000;
         }
 
-        void signTransaction(std::shared_ptr<chain::Crypto> privateKey_) { signature_ = privateKey_->sign(toString()); }
+        inline void signTransaction(std::shared_ptr<chain::Crypto> privateKey_) { signature_ = privateKey_->sign(toString()); }
 
         // bool verifyTransaction(std::shared_ptr<chain::OpenSSLPublic> publicKey_) {
         // return publicKey_->verify(toString(), signature_);
         // }
 
         // Method to verify the transaction signature
-        bool isValid() const {
+        inline bool isValid() const {
             if (uuid_.empty() || function_.to_string().empty() || signature_.empty() || priority_ < 0 ||
                 priority_ > 255) {
                 return false;
@@ -67,7 +67,7 @@ namespace chain {
             return true;
         }
 
-        std::string toString() const {
+        inline std::string toString() const {
             std::stringstream ss;
             ss << timestamp_.sec << timestamp_.nanosec << priority_ << uuid_ << function_.to_string();
             return ss.str();

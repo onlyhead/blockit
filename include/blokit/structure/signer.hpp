@@ -187,7 +187,7 @@ namespace chain {
     // Crypto class for private key operations
     class Crypto {
       public:
-        Crypto(const std::string &keyFile) : algorithm_(lockey::Lockey::Algorithm::RSA_2048), crypto_(algorithm_) {
+        inline Crypto(const std::string &keyFile) : algorithm_(lockey::Lockey::Algorithm::RSA_2048), crypto_(algorithm_) {
             // Generate a new keypair (in real implementation, would load from file)
             keypair_ = crypto_.generate_keypair();
             if (!keypair_.private_key.empty()) {
@@ -195,7 +195,7 @@ namespace chain {
             }
         }
 
-        std::vector<unsigned char> sign(const std::string &data) {
+        inline std::vector<unsigned char> sign(const std::string &data) {
             if (!hasKeypair_) {
                 throw std::runtime_error("No private key available for signing");
             }
@@ -210,7 +210,7 @@ namespace chain {
             return std::vector<unsigned char>(result.data.begin(), result.data.end());
         }
 
-        std::vector<unsigned char> decrypt(const std::vector<unsigned char> &ciphertext) {
+        inline std::vector<unsigned char> decrypt(const std::vector<unsigned char> &ciphertext) {
             if (!hasKeypair_) {
                 throw std::runtime_error("No private key available for decryption");
             }
@@ -225,7 +225,7 @@ namespace chain {
             return std::vector<unsigned char>(result.data.begin(), result.data.end());
         }
 
-        std::string getPublicHalf() {
+        inline std::string getPublicHalf() {
             if (!hasKeypair_) {
                 throw std::runtime_error("No keypair available");
             }
@@ -246,7 +246,7 @@ namespace chain {
         }
 
         // Get the raw public key for direct use (Lockey-style)
-        std::vector<uint8_t> getPublicKeyRaw() {
+        inline std::vector<uint8_t> getPublicKeyRaw() {
             if (!hasKeypair_) {
                 throw std::runtime_error("No keypair available");
             }

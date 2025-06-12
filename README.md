@@ -4,8 +4,7 @@
 Blockit
 ===
 
-A header-only blockchain/ledger library for C++20.
-
+A type-safe, template-based blockchain library for C++20 with compile-time validation.
 
 
 ## Features

@@ -16,7 +16,7 @@ namespace chain {
         std::vector<Block<T>> blocks_;
 
         Chain() = default;
-        Chain(std::string s_uuid, std::string t_uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
+        inline Chain(std::string s_uuid, std::string t_uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
               int16_t priority = 100) {
             Transaction<T> genesisTransaction(t_uuid, function, priority);
             genesisTransaction.signTransaction(privateKey_);
@@ -25,7 +25,7 @@ namespace chain {
             uuid_ = s_uuid;
         }
 
-        Chain(std::string s_uuid, std::string t_uuid, T function, int16_t priority = 100) {
+        inline Chain(std::string s_uuid, std::string t_uuid, T function, int16_t priority = 100) {
             Transaction<T> genesisTransaction(t_uuid, function, priority);
             Block<T> genesisBlock({genesisTransaction});
             blocks_.push_back(genesisBlock);
@@ -33,7 +33,7 @@ namespace chain {
         }
 
         // Method to add a new block to the blockchain
-        void addBlock(const Block<T> &newBlock) {
+        inline void addBlock(const Block<T> &newBlock) {
             Block<T> blockToAdd = newBlock;
             blockToAdd.previous_hash_ = blocks_.back().hash_;
             blockToAdd.index_ = blocks_.back().index_ + 1;
@@ -47,7 +47,7 @@ namespace chain {
             blocks_.push_back(blockToAdd);
         }
 
-        void addBlock(std::string uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
+        inline void addBlock(std::string uuid, T function, std::shared_ptr<chain::Crypto> privateKey_,
                       int16_t priority = 100) {
             Transaction<T> genesisTransaction(uuid, function, priority);
             genesisTransaction.signTransaction(privateKey_);
@@ -56,7 +56,7 @@ namespace chain {
         }
 
         // Method to validate the integrity of the blockchain
-        bool isValid() const {
+        inline bool isValid() const {
             if (blocks_.empty()) {
                 return false;
             }

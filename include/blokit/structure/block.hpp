@@ -23,7 +23,7 @@ namespace chain {
         Timestamp timestamp_;
 
         Block() = default;
-        Block(std::vector<Transaction<T>> txns) {
+        inline Block(std::vector<Transaction<T>> txns) {
             index_ = 0;
             previous_hash_ = "GENESIS";
             transactions_ = txns;
@@ -35,7 +35,7 @@ namespace chain {
         }
 
         // Method to calculate the hash of the block
-        std::string calculateHash() const {
+        inline std::string calculateHash() const {
             std::stringstream ss;
             ss << index_ << timestamp_.sec << timestamp_.nanosec << previous_hash_ << nonce_;
             for (const auto &txn : transactions_) {
@@ -55,7 +55,7 @@ namespace chain {
             }
         }
 
-        bool isValid() const {
+        inline bool isValid() const {
             if (index_ < 0 || previous_hash_.empty() || hash_.empty()) {
                 std::cout << "Index: " << index_ << " Hash: " << hash_ << "Previous hash: " << previous_hash_
                           << std::endl;
@@ -66,7 +66,7 @@ namespace chain {
 
       private:
         // Helper function to get the current timestamp
-        std::string getCurrentTime() const {
+        inline std::string getCurrentTime() const {
             std::time_t now = std::time(nullptr);
             char buf[80];
             std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
