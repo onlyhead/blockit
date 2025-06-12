@@ -1,4 +1,6 @@
+#include "blokit/structure/account.hpp"
 #include "blokit/structure/block.hpp"
 #include "blokit/structure/chain.hpp"
+#include "blokit/structure/merkle.hpp"
 #include "blokit/structure/signer.hpp"
 #include "blokit/structure/transaction.hpp"

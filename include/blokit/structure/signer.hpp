@@ -187,7 +187,8 @@ namespace chain {
     // Crypto class for private key operations
     class Crypto {
       public:
-        inline Crypto(const std::string &keyFile) : algorithm_(lockey::Lockey::Algorithm::RSA_2048), crypto_(algorithm_) {
+        inline Crypto(const std::string &keyFile)
+            : algorithm_(lockey::Lockey::Algorithm::RSA_2048), crypto_(algorithm_) {
             // Generate a new keypair (in real implementation, would load from file)
             keypair_ = crypto_.generate_keypair();
             if (!keypair_.private_key.empty()) {

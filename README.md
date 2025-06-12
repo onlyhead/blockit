@@ -9,6 +9,7 @@ A type-safe, template-based blockchain library for C++20 with compile-time valid
 
 ## Features
 
+- **Header-Only Design**: Fully inline functions, no separate compilation required
 - **Generic Template Design**: Create blockchains for any data type that has a `to_string()` method
 - **Type Safety**: Compile-time enforcement that data types implement required methods
 - **Transaction Management**: Create, sign, and validate transactions with custom data types
@@ -18,6 +19,11 @@ A type-safe, template-based blockchain library for C++20 with compile-time valid
 - **Timestamp Precision**: Nanosecond-precision timestamps for ordering
 - **Priority System**: Transaction priority levels (0-255)
 - **SFINAE Type Checking**: Ensures data types have required `to_string()` method at compile time
+- **🆕 Entity Management**: Authorization and state tracking for robots/systems
+- **🆕 Double-Spend Prevention**: Duplicate transaction detection and prevention
+- **🆕 Merkle Trees**: Efficient transaction verification with cryptographic proofs
+- **🆕 Enhanced Block Validation**: Comprehensive cryptographic integrity checks
+- **🆕 Permission System**: Role-based access control for entities
 
 ## Quick Start
 
@@ -117,10 +123,11 @@ make
 
 ```bash
 cd build
-./main
+./main              # Original demo
+./enhanced_demo     # New features demo
 ```
 
-The example demonstrates:
+The original example demonstrates:
 - Generic template usage with `StringWrapper` 
 - Transaction creation and signing with custom data types
 - Block creation and validation
@@ -129,6 +136,13 @@ The example demonstrates:
 - Various advanced scenarios
 - Type safety and compile-time checking
 
+The enhanced example demonstrates:
+- **Robot Coordination**: Multiple robots working together through blockchain authorization
+- **Entity Management**: Registration, permissions, and state tracking
+- **Ledger Tracking**: Immutable logging for sensors, actuators, and controllers
+- **Double-Spend Prevention**: Automatic detection and rejection of duplicate commands
+- **Merkle Trees**: Efficient verification of individual transactions in large blocks
+
 ## Current Limitations
 
 This implementation is **educational only** and lacks several critical features for production use:
@@ -136,9 +150,9 @@ This implementation is **educational only** and lacks several critical features 
 - ❌ No Proof of Work or consensus mechanism
 - ❌ No network layer for distributed operation
 - ❌ No persistent storage
-- ❌ Limited transaction validation
-- ❌ No Merkle trees for efficient verification
-- ❌ No protection against double spending
+- ✅ ~~Limited transaction validation~~ **Enhanced transaction validation with entity permissions**
+- ✅ ~~No Merkle trees for efficient verification~~ **Merkle trees implemented for efficient verification**
+- ✅ ~~No protection against double spending~~ **Double-spend prevention implemented**
 - ❌ No difficulty adjustment
 - ❌ No fork resolution
 
