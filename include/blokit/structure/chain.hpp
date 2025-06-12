@@ -1,7 +1,9 @@
 #pragma once
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include "auth.hpp"
@@ -225,6 +227,115 @@ namespace chain {
         // Check if transaction is used
         inline bool isTransactionUsed(const std::string &tx_id) const {
             return entity_manager_.isTransactionUsed(tx_id);
+        }
+
+        // Serialization methods
+        inline std::string serialize() const {
+            std::stringstream ss;
+            ss << R"({)";
+            ss << R"("uuid": ")" << uuid_ << R"(",)";
+            ss << R"("timestamp": )" << timestamp_.serialize() << R"(,)";
+            ss << R"("blocks": [)";
+
+            for (size_t i = 0; i < blocks_.size(); ++i) {
+                ss << blocks_[i].serialize();
+                if (i < blocks_.size() - 1) {
+                    ss << ",";
+                }
+            }
+
+            ss << R"(],)";
+            ss << R"("entity_manager": )" << entity_manager_.serialize();
+            ss << R"(})";
+
+            return ss.str();
+        }
+
+        inline static Chain<T> deserialize(const std::string &data) {
+            Chain<T> result;
+
+            // Parse UUID
+            size_t uuid_start = data.find("\"uuid\": \"") + 9;
+            size_t uuid_end = data.find("\"", uuid_start);
+            result.uuid_ = data.substr(uuid_start, uuid_end - uuid_start);
+
+            // Parse timestamp
+            size_t ts_start = data.find("\"timestamp\": ") + 13;
+            size_t ts_end = data.find("},", ts_start) + 1;
+            result.timestamp_ = Timestamp::deserialize(data.substr(ts_start, ts_end - ts_start));
+
+            // Parse blocks array
+            size_t blocks_array_start = data.find("\"blocks\": [") + 11;
+            size_t blocks_array_end = data.find("],", blocks_array_start);
+            std::string blocks_array_data = data.substr(blocks_array_start, blocks_array_end - blocks_array_start);
+
+            // Parse individual blocks
+            int brace_count = 0;
+            size_t block_start = 0;
+
+            for (size_t i = 0; i < blocks_array_data.length(); ++i) {
+                if (blocks_array_data[i] == '{') {
+                    if (brace_count == 0)
+                        block_start = i;
+                    brace_count++;
+                } else if (blocks_array_data[i] == '}') {
+                    brace_count--;
+                    if (brace_count == 0) {
+                        std::string block_data = blocks_array_data.substr(block_start, i - block_start + 1);
+                        result.blocks_.push_back(Block<T>::deserialize(block_data));
+                    }
+                }
+            }
+
+            // Parse entity manager
+            size_t entity_start = data.find("\"entity_manager\": ") + 18;
+            size_t entity_end = data.rfind("}");
+            std::string entity_data = data.substr(entity_start, entity_end - entity_start);
+            result.entity_manager_ = EntityManager::deserialize(entity_data);
+
+            return result;
+        }
+
+        // File I/O methods
+        inline bool saveToFile(const std::string &filename) const {
+            try {
+                std::ofstream file(filename);
+                if (!file.is_open()) {
+                    std::cerr << "Failed to open file for writing: " << filename << std::endl;
+                    return false;
+                }
+
+                file << serialize();
+                file.close();
+
+                std::cout << "Blockchain saved to " << filename << std::endl;
+                return true;
+            } catch (const std::exception &e) {
+                std::cerr << "Error saving blockchain: " << e.what() << std::endl;
+                return false;
+            }
+        }
+
+        inline bool loadFromFile(const std::string &filename) {
+            try {
+                std::ifstream file(filename);
+                if (!file.is_open()) {
+                    std::cerr << "Failed to open file for reading: " << filename << std::endl;
+                    return false;
+                }
+
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                file.close();
+
+                *this = Chain<T>::deserialize(buffer.str());
+
+                std::cout << "Blockchain loaded from " << filename << std::endl;
+                return true;
+            } catch (const std::exception &e) {
+                std::cerr << "Error loading blockchain: " << e.what() << std::endl;
+                return false;
+            }
         }
     };
 } // namespace chain

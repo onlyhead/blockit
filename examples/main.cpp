@@ -31,6 +31,17 @@ class StringWrapper {
         value_ = str;
         return *this;
     }
+
+    // Serialization methods for persistent storage
+    std::string serialize() const { return "\"" + value_ + "\""; }
+
+    static StringWrapper deserialize(const std::string &data) {
+        // Remove quotes if present
+        if (data.length() >= 2 && data.front() == '"' && data.back() == '"') {
+            return StringWrapper(data.substr(1, data.length() - 2));
+        }
+        return StringWrapper(data);
+    }
 };
 
 void printSeparator(const std::string &title) {
@@ -246,6 +257,104 @@ void demonstrateAdvancedScenarios() {
     std::cout << "  Test chain valid: " << (chain2.isValid() ? "YES" : "NO") << std::endl;
 }
 
+void demonstratePersistentStorage() {
+    printSeparator("PERSISTENT STORAGE DEMONSTRATION");
+
+    auto privateKey = std::make_shared<chain::Crypto>("storage_key");
+
+    // Create a blockchain with some transactions
+    chain::Chain<StringWrapper> originalChain("storage-chain", "genesis-tx", StringWrapper("genesis_data"), privateKey);
+
+    // Register some participants
+    originalChain.registerParticipant("device-001", "active", {{"type", "sensor"}});
+    originalChain.registerParticipant("device-002", "maintenance", {{"type", "actuator"}});
+    originalChain.grantCapability("device-001", "READ_DATA");
+    originalChain.grantCapability("device-002", "WRITE_DATA");
+
+    // Add some blocks with transactions
+    for (int i = 1; i <= 3; i++) {
+        std::vector<chain::Transaction<StringWrapper>> transactions;
+
+        for (int j = 1; j <= 2; j++) {
+            std::string txId = "storage-tx-" + std::to_string(i) + "-" + std::to_string(j);
+            std::string operation = (j % 2 == 0) ? "data_read" : "data_write";
+            chain::Transaction<StringWrapper> tx(txId, StringWrapper(operation), 100 + j);
+            tx.signTransaction(privateKey);
+            transactions.push_back(tx);
+        }
+
+        chain::Block<StringWrapper> block(transactions);
+        originalChain.addBlock(block);
+    }
+
+    std::cout << "Original blockchain created with " << originalChain.blocks_.size() << " blocks" << std::endl;
+    std::cout << "Total transactions: " << (originalChain.blocks_.size() * 2) << std::endl;
+
+    // Demonstrate serialization
+    std::cout << "\n--- Serialization Test ---" << std::endl;
+    try {
+        std::string serialized = originalChain.serialize();
+        std::cout << "Blockchain serialized successfully!" << std::endl;
+        std::cout << "Serialized data size: " << serialized.length() << " bytes" << std::endl;
+
+        // Show a snippet of the serialized data
+        std::cout << "Serialized data preview (first 200 chars):" << std::endl;
+        std::cout << serialized.substr(0, 200) << "..." << std::endl;
+
+        // Demonstrate deserialization
+        std::cout << "\n--- Deserialization Test ---" << std::endl;
+        chain::Chain<StringWrapper> deserializedChain = chain::Chain<StringWrapper>::deserialize(serialized);
+
+        std::cout << "Blockchain deserialized successfully!" << std::endl;
+        std::cout << "Deserialized chain UUID: " << deserializedChain.uuid_ << std::endl;
+        std::cout << "Deserialized chain blocks: " << deserializedChain.blocks_.size() << std::endl;
+        std::cout << "Deserialized chain valid: " << (deserializedChain.isValid() ? "YES" : "NO") << std::endl;
+
+        // Verify data integrity
+        bool integrity_check = (originalChain.uuid_ == deserializedChain.uuid_ &&
+                                originalChain.blocks_.size() == deserializedChain.blocks_.size());
+        std::cout << "Data integrity check: " << (integrity_check ? "PASSED" : "FAILED") << std::endl;
+
+    } catch (const std::exception &e) {
+        std::cout << "Serialization/Deserialization error: " << e.what() << std::endl;
+    }
+
+    // Demonstrate file I/O
+    std::cout << "\n--- File I/O Test ---" << std::endl;
+    std::string filename = "test_blockchain.json";
+
+    try {
+        // Save to file
+        bool save_success = originalChain.saveToFile(filename);
+        std::cout << "Save to file: " << (save_success ? "SUCCESS" : "FAILED") << std::endl;
+
+        if (save_success) {
+            // Load from file
+            chain::Chain<StringWrapper> loadedChain;
+            bool load_success = loadedChain.loadFromFile(filename);
+            std::cout << "Load from file: " << (load_success ? "SUCCESS" : "FAILED") << std::endl;
+
+            if (load_success) {
+                std::cout << "Loaded chain UUID: " << loadedChain.uuid_ << std::endl;
+                std::cout << "Loaded chain blocks: " << loadedChain.blocks_.size() << std::endl;
+                std::cout << "Loaded chain valid: " << (loadedChain.isValid() ? "YES" : "NO") << std::endl;
+
+                // Verify file persistence integrity
+                bool file_integrity = (originalChain.uuid_ == loadedChain.uuid_ &&
+                                       originalChain.blocks_.size() == loadedChain.blocks_.size());
+                std::cout << "File persistence integrity: " << (file_integrity ? "PASSED" : "FAILED") << std::endl;
+            }
+
+            // Clean up test file
+            std::remove(filename.c_str());
+            std::cout << "Test file cleaned up" << std::endl;
+        }
+
+    } catch (const std::exception &e) {
+        std::cout << "File I/O error: " << e.what() << std::endl;
+    }
+}
+
 int main() {
     std::cout << "Blockit Library Demonstration" << std::endl;
     std::cout << "=============================" << std::endl;
@@ -258,16 +367,25 @@ int main() {
         demonstrateChain();
         demonstrateCryptography();
         demonstrateAdvancedScenarios();
+        demonstratePersistentStorage();
 
         printSeparator("DEMONSTRATION COMPLETE");
         std::cout << "All examples completed successfully!" << std::endl;
-        std::cout << "The library demonstrates basic blockchain data structures." << std::endl;
+        std::cout << "The library demonstrates basic blockchain data structures and persistent storage." << std::endl;
+        std::cout << "\nImplemented features:" << std::endl;
+        std::cout << "✅ Transaction creation and signing" << std::endl;
+        std::cout << "✅ Block creation with Merkle trees" << std::endl;
+        std::cout << "✅ Blockchain validation and integrity checks" << std::endl;
+        std::cout << "✅ Participant authentication and authorization" << std::endl;
+        std::cout << "✅ Double-spend prevention" << std::endl;
+        std::cout << "✅ Serialization and deserialization" << std::endl;
+        std::cout << "✅ File-based persistent storage" << std::endl;
         std::cout << "\nNext steps for production use:" << std::endl;
         std::cout << "- Implement proper consensus mechanism (Proof of Work/Stake)" << std::endl;
         std::cout << "- Add network layer for distributed operation" << std::endl;
-        std::cout << "- Implement persistent storage" << std::endl;
+        std::cout << "- Implement database integration for better performance" << std::endl;
         std::cout << "- Add comprehensive transaction validation" << std::endl;
-        std::cout << "- Implement Merkle trees for efficient verification" << std::endl;
+        std::cout << "- Implement fork resolution mechanism" << std::endl;
 
     } catch (const std::exception &e) {
         std::cerr << "Error during demonstration: " << e.what() << std::endl;
